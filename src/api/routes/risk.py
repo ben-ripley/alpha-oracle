@@ -12,7 +12,9 @@ router = APIRouter()
 async def get_risk_dashboard():
     """Get comprehensive risk dashboard data."""
     risk_mgr = await get_risk_manager()
-    return await risk_mgr.get_risk_dashboard()
+    broker = await get_broker()
+    portfolio = await broker.get_portfolio()
+    return await risk_mgr.get_risk_dashboard(portfolio)
 
 
 @router.get("/limits")
@@ -55,7 +57,10 @@ async def get_risk_limits():
 async def get_circuit_breaker_status():
     """Get status of all circuit breakers."""
     risk_mgr = await get_risk_manager()
-    breakers = await risk_mgr.circuit_breakers.check_all()
+    broker = await get_broker()
+    portfolio = await broker.get_portfolio()
+    context = risk_mgr.circuit_breakers.build_context(portfolio=portfolio)
+    breakers = await risk_mgr.circuit_breakers.check_all(context)
     return {
         "breakers": [
             {"name": name, "tripped": tripped, "reason": reason}

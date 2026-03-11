@@ -5,6 +5,7 @@ from datetime import datetime
 
 import structlog
 
+from src.core.config import RiskSettings
 from src.core.interfaces import RiskManager
 from src.core.models import Order, PortfolioSnapshot, RiskAction, RiskCheckResult
 from src.risk.circuit_breaker import CircuitBreakerManager
@@ -132,3 +133,11 @@ class RiskManagerImpl(RiskManager):
     @property
     def reconciliation(self) -> ReconciliationEngine:
         return self._reconciliation
+
+    @property
+    def portfolio_monitor(self) -> PortfolioMonitor:
+        return self._monitor
+
+    @property
+    def settings(self) -> RiskSettings:
+        return self._pre_trade._settings

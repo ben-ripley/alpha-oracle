@@ -16,6 +16,7 @@ from src.core.models import (
 )
 from src.core.redis import get_redis
 from src.execution.order_generator import OrderGenerator
+from src.execution.tracker import ExecutionTracker
 
 logger = structlog.get_logger(__name__)
 
@@ -35,10 +36,12 @@ class ExecutionEngine:
         broker: BrokerAdapter,
         risk_manager: RiskManager,
         order_generator: OrderGenerator | None = None,
+        tracker: ExecutionTracker | None = None,
     ) -> None:
         self._broker = broker
         self._risk = risk_manager
         self._order_gen = order_generator or OrderGenerator()
+        self.tracker = tracker or ExecutionTracker(broker=broker)
 
     async def process_signal(self, signal: Signal) -> Order | None:
         log = logger.bind(symbol=signal.symbol, strategy=signal.strategy_name)

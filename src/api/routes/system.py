@@ -72,5 +72,5 @@ async def get_system_config():
 async def operator_heartbeat():
     """Update operator heartbeat for dead man's switch."""
     risk_mgr = await get_risk_manager()
-    await risk_mgr.circuit_breakers.update_heartbeat()
+    await risk_mgr.circuit_breakers.record_heartbeat()
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}

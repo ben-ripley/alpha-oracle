@@ -161,6 +161,7 @@ class ExecutionTracker:
         symbol: str | None = None,
         start: datetime | None = None,
         end: datetime | None = None,
+        limit: int | None = None,
     ) -> list[TradeRecord]:
         redis = await get_redis()
 
@@ -178,6 +179,8 @@ class ExecutionTracker:
                 continue
             trades.append(trade)
 
+        if limit:
+            trades = trades[:limit]
         return trades
 
     async def get_execution_metrics(self) -> dict:

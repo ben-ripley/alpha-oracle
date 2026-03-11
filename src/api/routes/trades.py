@@ -68,7 +68,7 @@ async def get_execution_quality(days: int = Query(default=30, ge=1, le=365)):
     engine = await get_execution_engine()
     end = datetime.utcnow()
     start = end - timedelta(days=days)
-    metrics = await engine.tracker.get_execution_quality(start, end)
+    metrics = await engine.tracker.get_execution_metrics()
     return metrics
 
 

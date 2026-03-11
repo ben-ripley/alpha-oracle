@@ -33,8 +33,8 @@ async def get_risk_manager():
     global _risk_manager
     if _risk_manager is None:
         from src.risk.manager import RiskManagerImpl
-        settings = get_settings()
-        _risk_manager = RiskManagerImpl(settings.risk)
+        broker = await get_broker()
+        _risk_manager = RiskManagerImpl(broker_adapter=broker)
     return _risk_manager
 
 
@@ -59,6 +59,6 @@ async def get_strategy_engine():
 async def get_storage():
     global _storage
     if _storage is None:
-        from src.data.storage import StorageManager
-        _storage = StorageManager()
+        from src.data.storage import TimeSeriesStorage
+        _storage = TimeSeriesStorage()
     return _storage
