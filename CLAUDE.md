@@ -49,18 +49,28 @@ docs/adrs/        # Architecture Decision Records (001-009)
 
 ## Commands
 ```bash
-# Backend
-docker-compose up                    # Start TimescaleDB, Redis, Prometheus, Grafana
-uvicorn src.api.main:app --reload    # Start FastAPI (port 8000)
+# Backend (Docker infra + uvicorn)
+./scripts/start-backend.sh           # Start TimescaleDB, Redis, Prometheus, Grafana + FastAPI
+./scripts/stop-backend.sh            # Stop FastAPI (leaves Docker infra running)
+./scripts/stop-backend.sh --all      # Stop FastAPI + Docker infra
+./scripts/restart-backend.sh         # Restart FastAPI only
+./scripts/restart-backend.sh --all   # Restart FastAPI + Docker infra
 
-# Frontend
-cd web && npm run dev                # Start React dashboard (port 3000)
+# Frontend (Vite dev server)
+./scripts/start-frontend.sh          # Start React dashboard (port 3000)
+./scripts/stop-frontend.sh           # Stop React dashboard
+./scripts/restart-frontend.sh        # Restart React dashboard
+
+# Database
+./scripts/clear_database.sh          # Remove seed/demo data from Redis (prepare for real data)
 cd web && npm run build              # Production build
 
 # Tests
 python -m pytest tests/ -v           # Run all tests (97 tests, <1s)
 python -m pytest tests/unit/test_pdt_guard.py -v  # PDT guard tests only
 ```
+
+Logs are written to `logs/backend.log` and `logs/frontend.log`. PID files live in `.pids/`.
 
 ## Development Notes
 - Strategies use `src/strategy/builtin/_indicators.py` shim (falls back from pandas_ta to ta library)

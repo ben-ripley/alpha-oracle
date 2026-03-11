@@ -75,11 +75,11 @@ cd ..
 ### Run
 
 ```bash
-# Start the API server
-uvicorn src.api.main:app --reload --port 8000
+# Start the API server (Docker infra + uvicorn)
+./scripts/start-backend.sh
 
 # In another terminal, start the dashboard
-cd web && npm run dev
+./scripts/start-frontend.sh
 
 # Open http://localhost:3000
 ```
@@ -89,6 +89,23 @@ cd web && npm run dev
 ```bash
 python -m pytest tests/ -v
 ```
+
+## Scripts
+
+All lifecycle scripts live in `scripts/`. They manage background processes via PID files in
+`.pids/` and write output to `logs/backend.log` / `logs/frontend.log`.
+
+| Script | Description |
+|--------|-------------|
+| `./scripts/start-backend.sh` | Start Docker infra (TimescaleDB, Redis, Prometheus, Grafana) + FastAPI on :8000 |
+| `./scripts/stop-backend.sh` | Stop FastAPI only |
+| `./scripts/stop-backend.sh --all` | Stop FastAPI + Docker infra |
+| `./scripts/restart-backend.sh` | Restart FastAPI |
+| `./scripts/restart-backend.sh --all` | Restart FastAPI + Docker infra |
+| `./scripts/start-frontend.sh` | Start Vite dev server on :3000 |
+| `./scripts/stop-frontend.sh` | Stop Vite dev server |
+| `./scripts/restart-frontend.sh` | Restart Vite dev server |
+| `./scripts/clear_database.sh` | Delete all seed/demo keys from Redis, ready for real data |
 
 ## Dashboard
 
@@ -152,6 +169,14 @@ stock-analysis/
 │   ├── feature-specs.md        # Feature specifications (F-001 to F-008)
 │   └── roadmap.md              # Implementation roadmap and cost analysis
 └── scripts/
+    ├── start-backend.sh        # Start Docker infra + uvicorn API
+    ├── stop-backend.sh         # Stop API (--all also stops Docker infra)
+    ├── restart-backend.sh      # Restart API
+    ├── start-frontend.sh       # Start Vite dev server
+    ├── stop-frontend.sh        # Stop Vite dev server
+    ├── restart-frontend.sh     # Restart Vite dev server
+    ├── clear_database.sh       # Remove seed/demo data from Redis
+    ├── seed_demo_data.py       # Populate Redis with demo data for UI testing
     └── init_db.sql             # TimescaleDB schema (10 hypertables)
 ```
 
