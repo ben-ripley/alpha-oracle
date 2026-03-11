@@ -29,9 +29,8 @@ dependencies = [
 
     # Strategy & Backtesting
     "backtrader>=1.9,<2",
-    "vectorbt>=0.26,<1",
+    "ta>=0.11,<1",
     "ta-lib>=0.4,<1;python_version<'3.13'",
-    "pandas-ta>=0.3,<1",
 
     # ML
     "scikit-learn>=1.3,<2",
@@ -71,6 +70,10 @@ dev = [
     "ruff>=0.1,<1",
     "mypy>=1.8,<2",
     "pre-commit>=3.6,<4",
+]
+backtest-advanced = [
+    "vectorbt>=0.26,<1",
+    "pandas-ta>=0.3,<1",
 ]
 ml-advanced = [
     "torch>=2.1,<3",

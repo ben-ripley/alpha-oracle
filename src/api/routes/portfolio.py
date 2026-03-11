@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Query
@@ -33,22 +34,36 @@ async def get_portfolio_history(
     end = datetime.utcnow()
     start = end - timedelta(days=days)
     snapshots = await storage.get_portfolio_snapshots(start, end)
-    return {
-        "snapshots": [
-            {
-                "timestamp": s.timestamp.isoformat(),
-                "total_equity": s.total_equity,
-                "cash": s.cash,
-                "positions_value": s.positions_value,
-                "daily_pnl": s.daily_pnl,
-                "daily_pnl_pct": s.daily_pnl_pct,
-                "total_pnl": s.total_pnl,
-                "total_pnl_pct": s.total_pnl_pct,
-                "max_drawdown_pct": s.max_drawdown_pct,
-            }
-            for s in snapshots
-        ]
-    }
+    if snapshots:
+        return {
+            "snapshots": [
+                {
+                    "timestamp": s.timestamp.isoformat(),
+                    "total_equity": s.total_equity,
+                    "cash": s.cash,
+                    "positions_value": s.positions_value,
+                    "daily_pnl": s.daily_pnl,
+                    "daily_pnl_pct": s.daily_pnl_pct,
+                    "total_pnl": s.total_pnl,
+                    "total_pnl_pct": s.total_pnl_pct,
+                    "max_drawdown_pct": s.max_drawdown_pct,
+                }
+                for s in snapshots
+            ]
+        }
+
+    # Fall back to Redis seed data
+    try:
+        from src.core.redis import get_redis
+        r = await get_redis()
+        raw = await r.get("portfolio:history")
+        if raw:
+            all_history = json.loads(raw)
+            cutoff = start.isoformat()
+            return {"snapshots": [s for s in all_history if s["timestamp"] >= cutoff][-days:]}
+    except Exception:
+        pass
+    return {"snapshots": []}
 
 
 @router.get("/allocation")

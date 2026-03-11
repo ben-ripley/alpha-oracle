@@ -14,6 +14,8 @@ async def get_risk_dashboard():
     risk_mgr = await get_risk_manager()
     broker = await get_broker()
     portfolio = await broker.get_portfolio()
+    context = await risk_mgr.circuit_breakers.build_context_from_redis(portfolio=portfolio)
+    await risk_mgr.circuit_breakers.check_all(context)
     return await risk_mgr.get_risk_dashboard(portfolio)
 
 
@@ -46,6 +48,7 @@ async def get_risk_limits():
         },
         "pdt": {
             "day_trades_used": metrics.get("pdt_trades_used", 0),
+            "day_trades_max": metrics.get("pdt_max", config.pdt_guard.max_day_trades),
             "max_day_trades": config.pdt_guard.max_day_trades,
             "rolling_window_days": config.pdt_guard.rolling_window_days,
             "enabled": config.pdt_guard.enabled,
@@ -59,7 +62,7 @@ async def get_circuit_breaker_status():
     risk_mgr = await get_risk_manager()
     broker = await get_broker()
     portfolio = await broker.get_portfolio()
-    context = risk_mgr.circuit_breakers.build_context(portfolio=portfolio)
+    context = await risk_mgr.circuit_breakers.build_context_from_redis(portfolio=portfolio)
     breakers = await risk_mgr.circuit_breakers.check_all(context)
     return {
         "breakers": [

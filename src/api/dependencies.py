@@ -23,9 +23,13 @@ _storage = None
 async def get_broker() -> BrokerAdapter:
     global _broker
     if _broker is None:
-        from src.execution.broker_adapters.alpaca_adapter import AlpacaBrokerAdapter
         settings = get_settings()
-        _broker = AlpacaBrokerAdapter(settings)
+        if settings.alpaca_api_key and settings.alpaca_secret_key:
+            from src.execution.broker_adapters.alpaca_adapter import AlpacaBrokerAdapter
+            _broker = AlpacaBrokerAdapter(settings)
+        else:
+            from src.execution.broker_adapters.paper_stub import PaperStubBroker
+            _broker = PaperStubBroker()
     return _broker
 
 
@@ -52,7 +56,13 @@ async def get_strategy_engine():
     global _strategy_engine
     if _strategy_engine is None:
         from src.strategy.engine import StrategyEngine
+        from src.strategy.builtin.swing_momentum import SwingMomentum
+        from src.strategy.builtin.mean_reversion import MeanReversion
+        from src.strategy.builtin.value_factor import ValueFactor
         _strategy_engine = StrategyEngine()
+        _strategy_engine.register_strategy(SwingMomentum())
+        _strategy_engine.register_strategy(MeanReversion())
+        _strategy_engine.register_strategy(ValueFactor())
     return _strategy_engine
 
 

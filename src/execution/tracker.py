@@ -170,12 +170,18 @@ class ExecutionTracker:
         else:
             raw_trades = await redis.lrange(TRADE_HISTORY_KEY, 0, -1)
 
+        from datetime import timezone as _tz
+
+        def _aware(dt: datetime) -> datetime:
+            return dt if dt.tzinfo else dt.replace(tzinfo=_tz.utc)
+
         trades: list[TradeRecord] = []
         for raw in raw_trades:
             trade = TradeRecord.model_validate_json(raw)
-            if start and trade.entry_time < start:
+            entry = _aware(trade.entry_time)
+            if start and entry < _aware(start):
                 continue
-            if end and trade.entry_time > end:
+            if end and entry > _aware(end):
                 continue
             trades.append(trade)
 

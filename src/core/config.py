@@ -142,6 +142,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_prefix="SA_",
         env_nested_delimiter="__",
+        extra="ignore",
     )
 
     environment: str = "development"
@@ -165,10 +166,12 @@ class Settings(BaseSettings):
 
     @classmethod
     def from_yaml(cls) -> Settings:
+        import os
+
         settings_data = _load_yaml("settings.yaml")
         risk_data = _load_yaml("risk_limits.yaml")
 
-        flat = {}
+        flat: dict = {}
         if "app" in settings_data:
             flat["environment"] = settings_data["app"].get("environment", "development")
             flat["log_level"] = settings_data["app"].get("log_level", "INFO")
@@ -179,6 +182,18 @@ class Settings(BaseSettings):
 
         if risk_data:
             flat["risk"] = risk_data
+
+        # Let env vars (SA_ prefix with __ nesting) override YAML values.
+        # pydantic-settings gives priority to explicit kwargs over env vars,
+        # so we must remove any YAML keys that have a corresponding env override.
+        prefix = (cls.model_config.get("env_prefix") or "").upper()
+        delimiter = cls.model_config.get("env_nested_delimiter") or "__"
+        for env_key in os.environ:
+            if not env_key.startswith(prefix):
+                continue
+            parts = env_key[len(prefix):].lower().split(delimiter.lower())
+            if len(parts) >= 2 and parts[0] in flat and isinstance(flat[parts[0]], dict):
+                flat[parts[0]][parts[1]] = os.environ[env_key]
 
         return cls(**flat)
 

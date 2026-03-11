@@ -16,7 +16,7 @@ const links = [
 
 export function Sidebar() {
   return (
-    <aside className="flex w-[68px] flex-col items-center border-r border-border bg-abyss py-4">
+    <aside className="relative z-10 flex w-[68px] flex-col items-center border-r border-border bg-abyss py-4">
       {/* Logo mark */}
       <div className="mb-8 flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-dim">
         <Activity className="h-5 w-5 text-cyan" />

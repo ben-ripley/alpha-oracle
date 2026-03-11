@@ -159,6 +159,24 @@ class CircuitBreakerManager:
             ctx["reconciliation_drift_pct"] = reconciliation_drift_pct
         return ctx
 
+    async def build_context_from_redis(
+        self,
+        portfolio: PortfolioSnapshot | None = None,
+    ) -> dict:
+        """Build context, reading persisted values (heartbeat) from Redis."""
+        ctx = self.build_context(portfolio=portfolio)
+        try:
+            r = await self._redis()
+            # Check both key formats (record_heartbeat uses REDIS_CB_PREFIX, seed uses bare key)
+            for key in (f"{REDIS_CB_PREFIX}heartbeat", "circuit_breaker:heartbeat"):
+                raw = await r.get(key)
+                if raw:
+                    ctx["last_operator_heartbeat"] = raw
+                    break
+        except Exception:
+            pass
+        return ctx
+
     async def check_all(
         self, context: dict
     ) -> list[tuple[str, bool, str]]:

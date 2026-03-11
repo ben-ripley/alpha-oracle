@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -12,6 +12,7 @@ os.environ.setdefault("SA_ALPACA_API_KEY", "test_key")
 os.environ.setdefault("SA_ALPACA_SECRET_KEY", "test_secret")
 
 from src.core.models import (
+    BacktestResult,
     OHLCV,
     Order,
     OrderSide,
@@ -143,4 +144,83 @@ def make_ohlcv_bars():
             price = close_price
 
         return bars
+    return _make
+
+
+@pytest.fixture
+def mock_redis():
+    """Shared AsyncMock Redis client for testing."""
+    redis = AsyncMock()
+    redis.get = AsyncMock(return_value=None)
+    redis.set = AsyncMock()
+    redis.delete = AsyncMock()
+    redis.hset = AsyncMock()
+    redis.hget = AsyncMock(return_value=None)
+    redis.hgetall = AsyncMock(return_value={})
+    redis.hdel = AsyncMock()
+    redis.hlen = AsyncMock(return_value=0)
+    redis.rpush = AsyncMock()
+    redis.lrange = AsyncMock(return_value=[])
+    redis.zadd = AsyncMock()
+    redis.zrangebyscore = AsyncMock(return_value=[])
+    redis.zremrangebyscore = AsyncMock()
+    redis.publish = AsyncMock()
+    return redis
+
+
+@pytest.fixture
+def mock_broker():
+    """AsyncMock spec'd to BrokerAdapter interface."""
+    from src.core.interfaces import BrokerAdapter
+
+    broker = AsyncMock(spec=BrokerAdapter)
+    broker.get_portfolio = AsyncMock(return_value=PortfolioSnapshot(
+        total_equity=20000.0,
+        cash=12000.0,
+        positions_value=8000.0,
+    ))
+    broker.get_positions = AsyncMock(return_value=[])
+    broker.submit_order = AsyncMock(side_effect=lambda o: o)
+    broker.cancel_order = AsyncMock(return_value=True)
+    broker.health_check = AsyncMock(return_value=True)
+    return broker
+
+
+@pytest.fixture
+def make_backtest_result():
+    """Factory for BacktestResult objects."""
+
+    def _make(
+        strategy_name: str = "TestStrategy",
+        total_return_pct: float = 25.0,
+        sharpe_ratio: float = 1.5,
+        sortino_ratio: float = 2.0,
+        max_drawdown_pct: float = 8.0,
+        profit_factor: float = 2.0,
+        total_trades: int = 150,
+        win_rate: float = 0.55,
+        **kwargs,
+    ) -> BacktestResult:
+        defaults = dict(
+            strategy_name=strategy_name,
+            start_date=datetime(2023, 1, 1),
+            end_date=datetime(2024, 1, 1),
+            initial_capital=100_000.0,
+            final_capital=125_000.0,
+            total_return_pct=total_return_pct,
+            annual_return_pct=total_return_pct,
+            sharpe_ratio=sharpe_ratio,
+            sortino_ratio=sortino_ratio,
+            max_drawdown_pct=max_drawdown_pct,
+            profit_factor=profit_factor,
+            total_trades=total_trades,
+            winning_trades=int(total_trades * win_rate),
+            losing_trades=total_trades - int(total_trades * win_rate),
+            win_rate=win_rate,
+            avg_win_pct=3.0,
+            avg_loss_pct=1.5,
+        )
+        defaults.update(kwargs)
+        return BacktestResult(**defaults)
+
     return _make

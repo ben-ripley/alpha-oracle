@@ -36,12 +36,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://trader:${POSTGRES_PASSWORD:-dev_password}@timescaledb:5432/stock_analysis
-      REDIS_URL: redis://redis:6379/0
-      ALPACA_API_KEY: ${ALPACA_API_KEY:-}
-      ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY:-}
-      ALPACA_PAPER: "true"
-      ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY:-}
+      SA_DATABASE__URL: postgresql+asyncpg://trader:${POSTGRES_PASSWORD:-dev_password}@timescaledb:5432/stock_analysis
+      SA_REDIS__URL: redis://redis:6379/0
+      SA_ALPACA_API_KEY: ${ALPACA_API_KEY:-}
+      SA_ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY:-}
+      SA_BROKER__PAPER_TRADING: "true"
+      SA_ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY:-}
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -50,6 +50,7 @@ services:
     volumes:
       - ./src:/app/src
       - ./config:/app/config
+      - ./scripts:/app/scripts
       - parquet_data:/app/data
 
   prometheus:
