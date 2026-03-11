@@ -1,0 +1,90 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "trading-overview",
+    "title": "Trading System Overview",
+    "timezone": "browser",
+    "refresh": "10s",
+    "time": { "from": "now-24h", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Portfolio Equity",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "targets": [{ "expr": "trading_portfolio_equity_dollars", "legendFormat": "Equity" }],
+        "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+      },
+      {
+        "id": 2,
+        "title": "Daily P&L",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+        "targets": [{ "expr": "trading_portfolio_daily_pnl_dollars", "legendFormat": "Daily P&L" }],
+        "fieldConfig": { "defaults": { "unit": "currencyUSD", "thresholds": { "steps": [{ "value": null, "color": "red" }, { "value": 0, "color": "green" }] } } }
+      },
+      {
+        "id": 3,
+        "title": "Drawdown %",
+        "type": "gauge",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+        "targets": [{ "expr": "trading_portfolio_drawdown_pct", "legendFormat": "Drawdown" }],
+        "fieldConfig": { "defaults": { "unit": "percent", "max": 20, "thresholds": { "steps": [{ "value": null, "color": "green" }, { "value": 5, "color": "yellow" }, { "value": 10, "color": "red" }] } } }
+      },
+      {
+        "id": 4,
+        "title": "PDT Trades Used",
+        "type": "gauge",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+        "targets": [{ "expr": "trading_pdt_trades_used", "legendFormat": "PDT" }],
+        "fieldConfig": { "defaults": { "max": 3, "thresholds": { "steps": [{ "value": null, "color": "green" }, { "value": 2, "color": "yellow" }, { "value": 3, "color": "red" }] } } }
+      },
+      {
+        "id": 5,
+        "title": "Orders by Status",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "targets": [{ "expr": "rate(trading_orders_total[5m])", "legendFormat": "{{status}}" }]
+      },
+      {
+        "id": 6,
+        "title": "Trade P&L Distribution",
+        "type": "histogram",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+        "targets": [{ "expr": "trading_trade_pnl_dollars_bucket", "legendFormat": "{{le}}" }]
+      },
+      {
+        "id": 7,
+        "title": "Kill Switch",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 12 },
+        "targets": [{ "expr": "trading_kill_switch_active", "legendFormat": "Kill Switch" }],
+        "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "INACTIVE", "color": "green" }, "1": { "text": "ACTIVE", "color": "red" } } }] } }
+      },
+      {
+        "id": 8,
+        "title": "Circuit Breakers Tripped",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 12 },
+        "targets": [{ "expr": "trading_circuit_breakers_tripped", "legendFormat": "Tripped" }],
+        "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "value": null, "color": "green" }, { "value": 1, "color": "red" }] } } }
+      },
+      {
+        "id": 9,
+        "title": "Order Latency",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+        "targets": [{ "expr": "histogram_quantile(0.95, rate(trading_order_latency_seconds_bucket[5m]))", "legendFormat": "p95" }, { "expr": "histogram_quantile(0.50, rate(trading_order_latency_seconds_bucket[5m]))", "legendFormat": "p50" }],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      },
+      {
+        "id": 10,
+        "title": "Data Fetch Latency",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+        "targets": [{ "expr": "histogram_quantile(0.95, rate(trading_data_fetch_latency_seconds_bucket[5m]))", "legendFormat": "{{source}} p95" }],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      }
+    ]
+  }
+}

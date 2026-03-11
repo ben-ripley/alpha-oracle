@@ -1,0 +1,184 @@
+# Stock Analysis — AI-Driven Automated Trading System
+
+An automated stock trading system for retail investors managing US equities through a personal brokerage account. The system ingests market data, applies rule-based and ML-driven signal generation, backtests and ranks strategies, executes trades, and manages risk with configurable autonomy levels.
+
+## Key Features
+
+- **Data Ingestion** — Alpaca (real-time), Alpha Vantage (historical/fundamentals), SEC EDGAR (filings)
+- **Strategy Engine** — Backtrader + VectorBT backtesting, walk-forward validation, composite ranking
+- **Built-in Strategies** — SwingMomentum (MA crossover), MeanReversion (Bollinger+RSI), ValueFactor (PE/PB/EV ranking)
+- **Execution Engine** — Half-Kelly position sizing, Alpaca broker adapter, order tracking with audit trail
+- **Risk Management** — 4-layer defense: position limits, portfolio limits, circuit breakers, autonomy modes
+- **PDT Guard** — Bulletproof Pattern Day Trader rule enforcement (max 3 day trades per 5 business days)
+- **Web Dashboard** — React/TypeScript terminal-style UI with real-time WebSocket updates
+- **Monitoring** — Prometheus metrics, Grafana dashboards, Slack/Telegram alerts
+- **Kill Switch** — Emergency halt via dashboard, API, or Telegram with typed confirmation
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 Docker Compose Stack                │
+│                                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────┐ │
+│  │   Data   │  │ Strategy │  │Execution │  │ Risk │ │
+│  │ Ingestion│──│  Engine  │──│  Engine  │──│ Mgr  │ │
+│  │  Module  │  │  Module  │  │  Module  │  │Module│ │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──┬───┘ │
+│       └─────────────┴─────────────┴───────────┘     │
+│             Redis (Event Bus + Cache)               │
+│                          │                          │
+│  ┌────────────┐  ┌───────┴─────┐  ┌──────────────┐  │
+│  │TimescaleDB │  │   DuckDB    │  │ Prometheus + │  │
+│  │(time-series)│ │ (analytics) │  │   Grafana    │  │
+│  └────────────┘  └─────────────┘  └──────────────┘  │
+│                                                     │
+│  ┌──────────────────────────────────────────────┐   │
+│  │          FastAPI + React Dashboard           │   │
+│  └──────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+```
+
+Modular monolith with Redis pub/sub for event-driven communication. Clean interfaces enforced by abstract base classes. See [Architecture ADR](docs/adrs/007-architecture.md).
+
+## Quick Start
+
+### Prerequisites
+
+- Docker & Docker Compose
+- Python 3.11+
+- Node.js 18+
+- [Alpaca](https://alpaca.markets/) account (free, for paper trading)
+- [Alpha Vantage](https://www.alphavantage.co/) API key (free tier)
+
+### Setup
+
+```bash
+# Clone and configure
+cp .env.example .env
+# Edit .env with your API keys
+
+# Start infrastructure
+docker-compose up -d
+
+# Install Python dependencies
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Install frontend dependencies
+cd web
+npm install
+cd ..
+```
+
+### Run
+
+```bash
+# Start the API server
+uvicorn src.api.main:app --reload --port 8000
+
+# In another terminal, start the dashboard
+cd web && npm run dev
+
+# Open http://localhost:3000
+```
+
+### Test
+
+```bash
+python -m pytest tests/ -v
+```
+
+## Dashboard
+
+The web dashboard provides a real-time view of your trading system:
+
+| Page | Description |
+|---|---|
+| **Portfolio** | Positions, P&L, allocation chart, equity curve |
+| **Strategies** | Strategy rankings, backtest results, equity curves |
+| **Risk** | PDT counter (X/3), drawdown chart, limit utilization, circuit breakers |
+| **Trades** | Trade history, pending approvals, execution quality |
+
+Dark terminal aesthetic with JetBrains Mono typography, real-time WebSocket updates, and a kill switch with typed confirmation.
+
+## Risk Management
+
+Four independent layers, any of which can halt trading:
+
+| Layer | Controls |
+|---|---|
+| **Position Limits** | Max 5% per position, 25% per sector, no penny stocks (<$5), 2% stop-loss |
+| **Portfolio Limits** | Max 10% drawdown, 3% daily loss, 20 max positions, 10% cash reserve |
+| **Circuit Breakers** | VIX >35, stale data (>5min), reconciliation drift, dead man switch (48hr) |
+| **Autonomy Modes** | PAPER_ONLY → MANUAL_APPROVAL → BOUNDED_AUTONOMOUS → FULL_AUTONOMOUS |
+
+The **PDT Guard** is hard-enforced and cannot be overridden while the account is under $25K. All strategies enforce minimum 2-day holds to avoid day trading.
+
+## Autonomy Modes
+
+| Mode | Behavior | Transition Requirement |
+|---|---|---|
+| `PAPER_ONLY` | All trades simulated | Default starting mode |
+| `MANUAL_APPROVAL` | Every trade needs human approval | 30 days paper + Sharpe > 1.0 |
+| `BOUNDED_AUTONOMOUS` | Auto-trades within limits; large trades need approval | 30 days manual + positive returns |
+| `FULL_AUTONOMOUS` | Fully automated within risk layers 1-3 | 60 days bounded + profitable |
+
+Mode transitions require explicit operator action and cannot be changed programmatically.
+
+## Project Structure
+
+```
+stock-analysis/
+├── docker-compose.yml          # TimescaleDB, Redis, Prometheus, Grafana
+├── pyproject.toml              # Python dependencies and tool config
+├── config/
+│   ├── settings.yaml           # Application settings
+│   ├── risk_limits.yaml        # Risk management configuration
+│   └── prometheus.yml          # Prometheus scrape config
+├── src/
+│   ├── core/                   # Models, interfaces, config, database, redis
+│   ├── data/                   # Ingestion pipeline + source adapters
+│   ├── strategy/               # Engine, backtesting, built-in strategies, ranker
+│   ├── execution/              # Order generation, broker adapter, tracking
+│   ├── risk/                   # PDT guard, pre-trade checks, circuit breakers
+│   ├── api/                    # FastAPI REST + WebSocket endpoints
+│   └── monitoring/             # Prometheus metrics, alert manager
+├── web/                        # React + TypeScript + TailwindCSS dashboard
+├── tests/unit/                 # 97 unit tests
+├── docs/
+│   ├── adrs/                   # Architecture Decision Records (001-009)
+│   ├── feature-specs.md        # Feature specifications (F-001 to F-008)
+│   └── roadmap.md              # Implementation roadmap and cost analysis
+└── scripts/
+    └── init_db.sql             # TimescaleDB schema (10 hypertables)
+```
+
+## Roadmap
+
+| Phase | Focus | Status |
+|---|---|---|
+| **Phase 1** | Data + Backtesting + Paper Trading + Dashboard | Implemented |
+| **Phase 2** | ML Signals (XGBoost) + Live Trading | Not started |
+| **Phase 3** | LLM Agent (Claude) + Full Automation | Not started |
+
+See [docs/roadmap.md](docs/roadmap.md) for detailed weekly plan and cost analysis.
+
+## Cost
+
+| Phase | Monthly Cost |
+|---|---|
+| Phase 1 | $0–25 (all free data sources) |
+| Phase 2 | $30–100 (VPS + Claude API + optional data) |
+| Phase 3 | $75–250 (heavier Claude + paid data + options flow) |
+
+## Documentation
+
+- [Architecture Decision Records](docs/adrs/) — 9 ADRs covering broker, data, ML, backtesting, stack, architecture, LLM, and risk
+- [Feature Specifications](docs/feature-specs.md) — F-001 through F-008
+- [Implementation Roadmap](docs/roadmap.md) — Phased plan with exit criteria
+
+## Disclaimer
+
+This software is for educational and research purposes. Automated trading involves substantial risk of loss. Past performance (including backtests) does not guarantee future results. The author is not responsible for any financial losses incurred through use of this system. Always start with paper trading and never risk money you cannot afford to lose.

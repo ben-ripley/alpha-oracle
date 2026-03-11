@@ -1,0 +1,59 @@
+app:
+  name: stock-analysis
+  environment: development  # development | paper | live
+  log_level: INFO
+
+broker:
+  provider: alpaca
+  paper_trading: true
+  base_url: https://paper-api.alpaca.markets
+
+data:
+  alpaca:
+    feed: iex  # iex (free) | sip (paid)
+    max_bars_per_request: 10000
+  alpha_vantage:
+    rate_limit_per_minute: 5
+    cache_ttl_hours: 24
+  edgar:
+    user_agent: "stock-analysis bot@example.com"
+    rate_limit_per_second: 10
+
+database:
+  url: postgresql+asyncpg://trader:dev_password@localhost:5432/stock_analysis
+  pool_size: 10
+  max_overflow: 20
+
+redis:
+  url: redis://localhost:6379/0
+  cache_ttl_seconds: 3600
+
+strategy:
+  min_sharpe_ratio: 1.0
+  min_profit_factor: 1.5
+  max_drawdown_pct: 20.0
+  min_trades: 100
+  walk_forward:
+    train_months: 24
+    test_months: 6
+    step_months: 3
+  ranking_weights:
+    sharpe: 0.30
+    sortino: 0.20
+    max_drawdown_inverse: 0.20
+    profit_factor: 0.15
+    consistency: 0.15
+
+execution:
+  default_order_type: limit
+  limit_offset_pct: 0.05
+  max_slippage_pct: 0.10
+  position_sizing: half_kelly
+
+monitoring:
+  prometheus_port: 8001
+  health_check_interval_seconds: 60
+
+notifications:
+  enabled: false
+  channels: []  # slack, telegram

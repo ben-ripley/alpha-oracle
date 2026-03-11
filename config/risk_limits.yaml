@@ -1,0 +1,33 @@
+autonomy_mode: PAPER_ONLY  # PAPER_ONLY | MANUAL_APPROVAL | BOUNDED_AUTONOMOUS | FULL_AUTONOMOUS
+
+position_limits:
+  max_position_pct: 5.0        # Max 5% of portfolio per position
+  max_sector_pct: 25.0         # Max 25% per sector
+  stop_loss_pct: 2.0           # 2% stop-loss per position
+  min_price: 5.0               # No penny stocks (< $5)
+  no_leverage: true            # No margin/leverage
+
+portfolio_limits:
+  max_drawdown_pct: 10.0       # Halt trading if drawdown exceeds 10%
+  max_daily_loss_pct: 3.0      # Max 3% daily loss
+  max_positions: 20            # Max 20 concurrent positions
+  max_daily_trades: 50         # Max 50 trades per day
+  min_cash_reserve_pct: 10.0   # Keep 10% in cash
+
+pdt_guard:
+  enabled: true
+  max_day_trades: 3            # Max 3 day trades per 5 business days (FINRA PDT rule)
+  rolling_window_days: 5       # Rolling 5 business day window
+  account_threshold: 25000.0   # PDT rule applies under $25K
+
+circuit_breakers:
+  vix_threshold: 35.0          # Halt trading if VIX > 35
+  stale_data_seconds: 300      # Alert if data older than 5 minutes
+  reconciliation_interval_seconds: 300  # Check positions every 5 minutes
+  max_reconciliation_drift_pct: 1.0    # Alert if positions drift > 1%
+  dead_man_switch_hours: 48    # Require operator heartbeat every 48 hours
+
+kill_switch:
+  http_enabled: true
+  telegram_enabled: false
+  cooldown_minutes: 60         # After kill switch, wait 60 min before restart
