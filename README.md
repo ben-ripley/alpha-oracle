@@ -4,13 +4,18 @@ An automated stock trading system for retail investors managing US equities thro
 
 ## Key Features
 
-- **Data Ingestion** — Alpaca (real-time), Alpha Vantage (historical/fundamentals), SEC EDGAR (filings)
-- **Strategy Engine** — Backtrader + VectorBT backtesting, walk-forward validation, composite ranking
+- **Data Ingestion** — Alpaca (real-time WebSocket), Alpha Vantage (historical/fundamentals), SEC EDGAR (filings), FINRA short interest
+- **Universe Management** — S&P 500 constituent tracking with Wikipedia scrape, Redis cache, and CSV fallback
+- **Feature Engineering** — 50+ point-in-time features: technical (RSI, MACD, BB, ATR, OBV), fundamental (sector percentiles, quality score), cross-asset (SPY beta, VIX regime), alternative (insider signals, short interest z-score)
+- **ML Pipeline** — XGBoost with walk-forward validation, Optuna hyperparameter tuning, isotonic/Platt confidence calibration
+- **Strategy Engine** — Backtrader + VectorBT backtesting, walk-forward validation, composite ranking; `MLSignalStrategy` (min 3-day hold)
 - **Built-in Strategies** — SwingMomentum (MA crossover), MeanReversion (Bollinger+RSI), ValueFactor (PE/PB/EV ranking)
-- **Execution Engine** — Half-Kelly position sizing, Alpaca broker adapter, order tracking with audit trail
+- **Execution Engine** — Half-Kelly position sizing, Smart Order Router (market/limit/TWAP), execution quality tracking (slippage, latency)
+- **Model Monitoring** — PSI feature drift detection, rolling accuracy tracking, degraded-window fallback, Prometheus gauges
+- **Scheduler** — APScheduler cron jobs for daily bars, weekly fundamentals, biweekly alternative data, weekly model retrain
 - **Risk Management** — 4-layer defense: position limits, portfolio limits, circuit breakers, autonomy modes
 - **PDT Guard** — Bulletproof Pattern Day Trader rule enforcement (max 3 day trades per 5 business days)
-- **Web Dashboard** — React/TypeScript terminal-style UI with real-time WebSocket updates
+- **Web Dashboard** — React/TypeScript terminal-style UI with real-time WebSocket updates, ML signal feed, feature importance, drift heatmap, model version history
 - **Monitoring** — Prometheus metrics, Grafana dashboards, Slack/Telegram alerts
 - **Kill Switch** — Emergency halt via dashboard, API, or Telegram with typed confirmation
 
@@ -114,9 +119,10 @@ The web dashboard provides a real-time view of your trading system:
 | Page | Description |
 |---|---|
 | **Portfolio** | Positions, P&L, allocation chart, equity curve |
-| **Strategies** | Strategy rankings, backtest results, equity curves |
+| **Strategies** | Strategy rankings, backtest results, equity curves, ML signal feed, feature importance, model performance |
 | **Risk** | PDT counter (X/3), drawdown chart, limit utilization, circuit breakers |
 | **Trades** | Trade history, pending approvals, execution quality |
+| **Model Health** | Rolling accuracy chart, feature drift heatmap (PSI), model version history |
 
 Dark terminal aesthetic with JetBrains Mono typography, real-time WebSocket updates, and a kill switch with typed confirmation.
 
@@ -156,14 +162,16 @@ stock-analysis/
 │   └── prometheus.yml          # Prometheus scrape config
 ├── src/
 │   ├── core/                   # Models, interfaces, config, database, redis
-│   ├── data/                   # Ingestion pipeline + source adapters
+│   ├── data/                   # Ingestion pipeline, adapters, feeds, parsers, universe
 │   ├── strategy/               # Engine, backtesting, built-in strategies, ranker
-│   ├── execution/              # Order generation, broker adapter, tracking
+│   ├── signals/                # Feature store, ML pipeline, signal generation, model monitoring
+│   ├── scheduling/             # APScheduler cron jobs and model registry
+│   ├── execution/              # Order generation, smart router, broker adapter, quality tracking
 │   ├── risk/                   # PDT guard, pre-trade checks, circuit breakers
 │   ├── api/                    # FastAPI REST + WebSocket endpoints
 │   └── monitoring/             # Prometheus metrics, alert manager
 ├── web/                        # React + TypeScript + TailwindCSS dashboard
-├── tests/unit/                 # 97 unit tests
+├── tests/unit/                 # 421 unit tests
 ├── docs/
 │   ├── adrs/                   # Architecture Decision Records (001-009)
 │   ├── feature-specs.md        # Feature specifications (F-001 to F-008)
@@ -185,7 +193,7 @@ stock-analysis/
 | Phase | Focus | Status |
 |---|---|---|
 | **Phase 1** | Data + Backtesting + Paper Trading + Dashboard | Implemented |
-| **Phase 2** | ML Signals (XGBoost) + Live Trading | Not started |
+| **Phase 2** | ML Signals (XGBoost) + Feature Engineering + Smart Execution | Implemented |
 | **Phase 3** | LLM Agent (Claude) + Full Automation | Not started |
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed weekly plan and cost analysis.

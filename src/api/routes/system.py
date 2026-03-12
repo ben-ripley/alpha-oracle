@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from src.api.dependencies import get_broker, get_risk_manager
 from src.core.config import get_settings
@@ -50,7 +50,9 @@ async def get_system_config():
             "paper_trading": settings.broker.paper_trading,
         },
         "data": {
-            "alpaca_feed": settings.data.alpaca.feed,
+            "price_source": settings.broker.provider.lower(),
+            "alpaca_feed": settings.data.alpaca.feed if settings.broker.provider.lower() == "alpaca" else None,
+            "ibkr_port": settings.broker.ibkr.port if settings.broker.provider.lower() == "ibkr" else None,
             "alpha_vantage_rate_limit": settings.data.alpha_vantage.rate_limit_per_minute,
         },
         "strategy": {
@@ -74,3 +76,24 @@ async def operator_heartbeat():
     risk_mgr = await get_risk_manager()
     await risk_mgr.circuit_breakers.record_heartbeat()
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@router.get("/scheduler/status")
+async def scheduler_status(request: Request):
+    """Get scheduler status and job list."""
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler is None:
+        return {"status": "not_running", "jobs": []}
+    return scheduler.get_status()
+
+
+@router.post("/scheduler/trigger/{job_name}")
+async def trigger_job(job_name: str, request: Request):
+    """Manually trigger a scheduled job."""
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler is None:
+        return {"error": "Scheduler not running"}
+    success = await scheduler.trigger_job(job_name)
+    if not success:
+        return {"error": f"Job '{job_name}' not found"}
+    return {"status": "triggered", "job": job_name}

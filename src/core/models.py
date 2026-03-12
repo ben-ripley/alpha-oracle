@@ -214,3 +214,44 @@ class RiskCheckResult(BaseModel):
     reasons: list[str] = Field(default_factory=list)
     adjusted_quantity: float | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# --- Phase 2: Alternative Data Models ---
+
+class InsiderTransaction(BaseModel):
+    symbol: str
+    filed_date: datetime
+    insider_name: str = ""
+    insider_title: str = ""
+    transaction_type: str = ""  # P (purchase), S (sale), A (grant), D (disposal), M (exercise)
+    shares: float = 0.0
+    price_per_share: float | None = None
+    shares_owned_after: float | None = None
+    is_direct: bool = True
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ShortInterestData(BaseModel):
+    symbol: str
+    settlement_date: datetime
+    short_interest: int = 0
+    avg_daily_volume: int = 0
+    days_to_cover: float = 0.0
+    short_pct_float: float | None = None
+    change_pct: float | None = None
+
+
+# --- Phase 2: Execution Quality ---
+
+class ExecutionQualityMetrics(BaseModel):
+    order_id: str = ""
+    symbol: str = ""
+    side: OrderSide = OrderSide.BUY
+    expected_price: float = 0.0
+    filled_price: float = 0.0
+    slippage_bps: float = 0.0
+    arrival_slippage_bps: float = 0.0
+    fill_latency_ms: float = 0.0
+    signal_timestamp: datetime | None = None
+    fill_timestamp: datetime | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)

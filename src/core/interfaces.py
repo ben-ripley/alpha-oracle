@@ -8,6 +8,7 @@ from src.core.models import (
     BacktestResult,
     FundamentalData,
     Filing,
+    InsiderTransaction,
     OHLCV,
     Order,
     OrderStatus,
@@ -52,7 +53,7 @@ class FilingSourceInterface(ABC):
     @abstractmethod
     async def get_insider_transactions(
         self, symbol: str, start: datetime, end: datetime
-    ) -> list[dict[str, Any]]:
+    ) -> list[InsiderTransaction]:
         ...
 
 

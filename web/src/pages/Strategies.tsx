@@ -1,11 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Trophy, ShieldCheck, HelpCircle, X, ExternalLink } from 'lucide-react';
+import { Trophy, ShieldCheck, HelpCircle, X, ExternalLink, Sparkles, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatPct, formatNumber } from '../lib/format';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
 import { STRATEGY_DESCRIPTIONS, type StrategyDescription } from '../lib/strategyDescriptions';
+import { SignalFeed } from '../components/SignalFeed';
+import { FeatureImportance } from '../components/FeatureImportance';
+import { ModelPerformance } from '../components/ModelPerformance';
+import { AccuracyChart } from '../components/AccuracyChart';
+import { DriftHeatmap } from '../components/DriftHeatmap';
+import { ModelVersionHistory } from '../components/ModelVersionHistory';
 
 function scoreColor(score: number): string {
   if (score >= 70) return 'text-gain';
@@ -287,6 +293,40 @@ export function Strategies() {
           onClose={() => setOpenHelp(null)}
         />
       )}
+
+      {/* ML Signal Intelligence */}
+      <div className="animate-in">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="h-3.5 w-3.5 text-cyan" />
+          <h2 className="font-mono text-xs uppercase tracking-wider text-muted">ML Signal Intelligence</h2>
+        </div>
+        <div className="glow-border rounded-xl bg-surface p-5">
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-2">
+              <SignalFeed />
+            </div>
+            <div className="space-y-6">
+              <FeatureImportance />
+              <ModelPerformance />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Model Health & Monitoring */}
+      <div className="animate-in">
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-3.5 w-3.5 text-cyan" />
+          <h2 className="font-mono text-xs uppercase tracking-wider text-muted">Model Health & Monitoring</h2>
+        </div>
+        <div className="glow-border rounded-xl bg-surface p-5 space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <AccuracyChart />
+            <DriftHeatmap />
+          </div>
+          <ModelVersionHistory />
+        </div>
+      </div>
     </div>
   );
 }

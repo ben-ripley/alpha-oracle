@@ -137,6 +137,14 @@ class ExecutionTracker:
         else:
             log.info("fill_recorded", price=filled_price, qty=filled_qty)
 
+        # Record execution quality metrics (fire-and-forget)
+        try:
+            from src.execution.quality import ExecutionQualityTracker
+            quality_tracker = ExecutionQualityTracker()
+            await quality_tracker.record_fill(order)
+        except Exception:
+            log.exception("execution_quality_record_failed")
+
     async def _check_day_trade(self, order: Order, redis) -> bool:
         """Check if this fill creates a same-day round trip (day trade)."""
         today = datetime.utcnow().strftime("%Y-%m-%d")

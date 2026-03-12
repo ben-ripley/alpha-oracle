@@ -16,8 +16,23 @@ echo "Starting Docker infra (timescaledb, redis, prometheus, grafana)..."
 cd "$PROJECT_ROOT"
 docker compose up -d timescaledb redis prometheus grafana
 
-echo "Waiting for TimescaleDB and Redis to be healthy..."
-docker compose wait timescaledb redis 2>/dev/null || sleep 5
+wait_healthy() {
+  local service=$1
+  local retries=20
+  until [[ $(docker inspect --format='{{.State.Health.Status}}' "$(docker compose ps -q "$service" 2>/dev/null)" 2>/dev/null) == "healthy" ]]; do
+    retries=$((retries - 1))
+    if [[ $retries -le 0 ]]; then
+      echo "ERROR: $service did not become healthy in time" >&2
+      exit 1
+    fi
+    echo "  Waiting for $service to be healthy..."
+    sleep 2
+  done
+  echo "  $service is healthy."
+}
+
+wait_healthy timescaledb
+wait_healthy redis
 
 # --- uvicorn API ---
 if [[ -f "$PID_FILE" ]]; then

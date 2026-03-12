@@ -1,9 +1,11 @@
 from src.execution.engine import ExecutionEngine
 from src.execution.order_generator import OrderGenerator
+from src.execution.router import SmartOrderRouter
 
 __all__ = [
     "ExecutionEngine",
     "OrderGenerator",
+    "SmartOrderRouter",
 ]
 
 

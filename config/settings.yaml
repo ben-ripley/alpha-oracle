@@ -4,9 +4,14 @@ app:
   log_level: INFO
 
 broker:
-  provider: alpaca
+  provider: alpaca        # alpaca | ibkr
   paper_trading: true
   base_url: https://paper-api.alpaca.markets
+  ibkr:
+    host: 127.0.0.1
+    port: 4002            # IB Gateway paper=4002, live=4001; TWS paper=7497, live=7496
+    client_id: 1
+    account_id: ""        # leave blank for single-account setups
 
 data:
   alpaca:
@@ -53,6 +58,29 @@ execution:
 monitoring:
   prometheus_port: 8001
   health_check_interval_seconds: 60
+
+ml:
+  prediction_horizon: 5
+  up_threshold: 0.01
+  down_threshold: -0.01
+  min_training_samples: 500
+  retrain_interval_days: 7
+  model_staleness_days: 14
+  confidence_threshold: 0.55
+
+scheduler:
+  enabled: true
+  daily_bars_cron: "0 17 * * 1-5"
+  weekly_fundamentals_cron: "0 6 * * 6"
+  biweekly_altdata_cron: "0 7 1,15 * *"
+  weekly_retrain_cron: "0 2 * * 0"
+
+router:
+  size_threshold_small_pct: 0.1
+  size_threshold_large_pct: 1.0
+  twap_num_slices: 5
+  twap_interval_seconds: 60
+  wide_spread_threshold_bps: 20.0
 
 notifications:
   enabled: false

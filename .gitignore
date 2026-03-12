@@ -28,6 +28,8 @@ node_modules/
 web/dist/
 web/.vite/
 
+.pids/
+
 .DS_Store
 *.swp
 *.swo

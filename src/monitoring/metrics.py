@@ -139,6 +139,24 @@ class TradingMetrics:
         ["strategy"],
     )
 
+    # ML Model metrics
+    model_accuracy = Gauge(
+        "trading_model_accuracy",
+        "ML model rolling directional accuracy",
+    )
+    feature_drift_psi = Gauge(
+        "trading_feature_drift_psi",
+        "Maximum PSI across all features (feature drift indicator)",
+    )
+    model_staleness_hours = Gauge(
+        "trading_model_staleness_hours",
+        "Hours since last model retrain",
+    )
+    ml_fallback_active = Gauge(
+        "trading_ml_fallback_active",
+        "ML fallback to rule-based active (1=active, 0=inactive)",
+    )
+
 
 def setup_metrics() -> None:
     """Start Prometheus metrics HTTP server."""

@@ -18,10 +18,18 @@ def _load_yaml(filename: str) -> dict:
     return {}
 
 
+class IBKRSettings(BaseSettings):
+    host: str = "127.0.0.1"
+    port: int = 4002          # IB Gateway paper=4002, live=4001; TWS paper=7497, live=7496
+    client_id: int = 1
+    account_id: str = ""      # leave blank for single-account setups
+
+
 class BrokerSettings(BaseSettings):
-    provider: str = "alpaca"
+    provider: str = "alpaca"  # alpaca | ibkr
     paper_trading: bool = True
     base_url: str = "https://paper-api.alpaca.markets"
+    ibkr: IBKRSettings = IBKRSettings()
 
 
 class AlpacaDataSettings(BaseSettings):
@@ -39,10 +47,31 @@ class EdgarDataSettings(BaseSettings):
     rate_limit_per_second: int = 10
 
 
+class UniverseSettings(BaseSettings):
+    cache_ttl_seconds: int = 86400  # 24h
+    fallback_csv: str = "config/sp500_fallback.csv"
+
+
+class FeedSettings(BaseSettings):
+    feed_type: str = "iex"  # iex (free, delayed) | sip (paid, real-time)
+    symbols_per_connection: int = 200
+    reconnect_delay_seconds: int = 5
+    max_reconnect_attempts: int = 10
+
+
+class FinraSettings(BaseSettings):
+    rate_limit_per_minute: int = 10
+    cache_ttl_seconds: int = 86400
+    base_url: str = "https://api.finra.org"
+
+
 class DataSettings(BaseSettings):
     alpaca: AlpacaDataSettings = AlpacaDataSettings()
     alpha_vantage: AlphaVantageDataSettings = AlphaVantageDataSettings()
     edgar: EdgarDataSettings = EdgarDataSettings()
+    universe: UniverseSettings = UniverseSettings()
+    feed: FeedSettings = FeedSettings()
+    finra: FinraSettings = FinraSettings()
 
 
 class DatabaseSettings(BaseSettings):
@@ -84,6 +113,43 @@ class ExecutionSettings(BaseSettings):
     limit_offset_pct: float = 0.05
     max_slippage_pct: float = 0.10
     position_sizing: str = "half_kelly"
+
+
+class MLSettings(BaseSettings):
+    prediction_horizon: int = 5
+    up_threshold: float = 0.01
+    down_threshold: float = -0.01
+    min_training_samples: int = 500
+    retrain_interval_days: int = 7
+    model_staleness_days: int = 14
+    confidence_threshold: float = 0.55
+    xgb_params: dict = Field(default_factory=lambda: {
+        "n_estimators": 300,
+        "max_depth": 6,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "min_child_weight": 5,
+        "objective": "multi:softprob",
+        "num_class": 3,
+        "eval_metric": "mlogloss",
+    })
+
+
+class SchedulerSettings(BaseSettings):
+    enabled: bool = True
+    daily_bars_cron: str = "0 17 * * 1-5"  # 5pm ET weekdays
+    weekly_fundamentals_cron: str = "0 6 * * 6"  # 6am Saturday
+    biweekly_altdata_cron: str = "0 7 1,15 * *"  # 7am 1st and 15th
+    weekly_retrain_cron: str = "0 2 * * 0"  # 2am Sunday
+
+
+class RouterSettings(BaseSettings):
+    size_threshold_small_pct: float = 0.1  # % of ADV
+    size_threshold_large_pct: float = 1.0
+    twap_num_slices: int = 5
+    twap_interval_seconds: int = 60
+    wide_spread_threshold_bps: float = 20.0
 
 
 class MonitoringSettings(BaseSettings):
@@ -163,6 +229,9 @@ class Settings(BaseSettings):
     execution: ExecutionSettings = Field(default_factory=ExecutionSettings)
     monitoring: MonitoringSettings = Field(default_factory=MonitoringSettings)
     risk: RiskSettings = Field(default_factory=RiskSettings)
+    ml: MLSettings = Field(default_factory=MLSettings)
+    scheduler: SchedulerSettings = Field(default_factory=SchedulerSettings)
+    router: RouterSettings = Field(default_factory=RouterSettings)
 
     @classmethod
     def from_yaml(cls) -> Settings:
@@ -176,7 +245,7 @@ class Settings(BaseSettings):
             flat["environment"] = settings_data["app"].get("environment", "development")
             flat["log_level"] = settings_data["app"].get("log_level", "INFO")
 
-        for key in ["broker", "data", "database", "redis", "strategy", "execution", "monitoring"]:
+        for key in ["broker", "data", "database", "redis", "strategy", "execution", "monitoring", "ml", "scheduler", "router"]:
             if key in settings_data:
                 flat[key] = settings_data[key]
 

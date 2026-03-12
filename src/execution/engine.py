@@ -16,6 +16,7 @@ from src.core.models import (
 )
 from src.core.redis import get_redis
 from src.execution.order_generator import OrderGenerator
+from src.execution.router import SmartOrderRouter
 from src.execution.tracker import ExecutionTracker
 
 logger = structlog.get_logger(__name__)
@@ -37,11 +38,13 @@ class ExecutionEngine:
         risk_manager: RiskManager,
         order_generator: OrderGenerator | None = None,
         tracker: ExecutionTracker | None = None,
+        router: SmartOrderRouter | None = None,
     ) -> None:
         self._broker = broker
         self._risk = risk_manager
         self._order_gen = order_generator or OrderGenerator()
         self.tracker = tracker or ExecutionTracker(broker=broker)
+        self._router = router
 
     async def process_signal(self, signal: Signal) -> Order | None:
         log = logger.bind(symbol=signal.symbol, strategy=signal.strategy_name)
@@ -115,10 +118,19 @@ class ExecutionEngine:
 
     async def _submit_order(self, order: Order, log) -> Order:
         try:
-            order = await self._broker.submit_order(order)
-            log.info("order_submitted_to_broker", broker_id=order.broker_order_id)
-            await self._publish_order_event(order, "submitted")
-            return order
+            if self._router is not None:
+                routed_orders = await self._router.route(order)
+            else:
+                routed_orders = [order]
+
+            last_submitted: Order = order
+            for routed in routed_orders:
+                routed = await self._broker.submit_order(routed)
+                log.info("order_submitted_to_broker", broker_id=routed.broker_order_id)
+                await self._publish_order_event(routed, "submitted")
+                last_submitted = routed
+
+            return last_submitted
         except Exception:
             log.exception("broker_submission_failed")
             order.status = OrderStatus.REJECTED

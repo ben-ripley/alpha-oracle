@@ -104,6 +104,83 @@ async def get_backtest_results(
     return {"results": results[:limit]}
 
 
+@router.get("/ml/signals")
+async def get_ml_signals():
+    """Get latest ML-generated signals. Returns mock data until ML pipeline is live."""
+    return {
+        "signals": [
+            {"symbol": "AAPL", "direction": "LONG", "confidence": 0.87, "strategy": "XGBoost Momentum", "timestamp": "2026-03-11 14:32"},
+            {"symbol": "MSFT", "direction": "LONG", "confidence": 0.79, "strategy": "XGBoost Momentum", "timestamp": "2026-03-11 14:32"},
+            {"symbol": "TSLA", "direction": "SHORT", "confidence": 0.72, "strategy": "XGBoost Mean Reversion", "timestamp": "2026-03-11 14:30"},
+            {"symbol": "NVDA", "direction": "LONG", "confidence": 0.68, "strategy": "XGBoost Momentum", "timestamp": "2026-03-11 14:28"},
+            {"symbol": "META", "direction": "FLAT", "confidence": 0.44, "strategy": "XGBoost Ensemble", "timestamp": "2026-03-11 14:25"},
+            {"symbol": "AMZN", "direction": "LONG", "confidence": 0.81, "strategy": "XGBoost Momentum", "timestamp": "2026-03-11 14:22"},
+            {"symbol": "GOOG", "direction": "SHORT", "confidence": 0.56, "strategy": "XGBoost Mean Reversion", "timestamp": "2026-03-11 14:20"},
+            {"symbol": "JPM", "direction": "LONG", "confidence": 0.63, "strategy": "XGBoost Value", "timestamp": "2026-03-11 14:18"},
+        ],
+        "model_meta": {
+            "accuracy": 0.73,
+            "precision": 0.69,
+            "recall": 0.71,
+            "model_version": "v0.1.0-mock",
+            "last_trained": "2026-03-10",
+            "drift_status": "OK",
+            "fallback_active": False,
+        },
+    }
+
+
+@router.get("/ml/feature-importance")
+async def get_ml_feature_importance():
+    """Get feature importance from latest model. Returns mock data until ML pipeline is live."""
+    return {
+        "features": [
+            {"name": "rsi_14", "importance": 0.1247},
+            {"name": "sma_20_200_ratio", "importance": 0.0934},
+            {"name": "volume_ratio_20d", "importance": 0.0821},
+            {"name": "macd_histogram", "importance": 0.0756},
+            {"name": "bb_width_20", "importance": 0.0698},
+            {"name": "atr_pct_14", "importance": 0.0612},
+            {"name": "obv_slope_10", "importance": 0.0547},
+            {"name": "sector_momentum", "importance": 0.0483},
+            {"name": "earnings_surprise", "importance": 0.0421},
+            {"name": "insider_net_30d", "importance": 0.0389},
+        ]
+    }
+
+
+@router.get("/ml/monitoring")
+async def get_ml_monitoring():
+    """Get model monitoring data. Returns mock data until monitoring is wired."""
+    return {
+        "accuracy_history": [
+            {"date": f"2026-03-{d:02d}", "accuracy": round(0.55 + (d % 7) * 0.03, 3)}
+            for d in range(1, 12)
+        ],
+        "feature_drift": [
+            {"name": "rsi_14", "psi": 0.04},
+            {"name": "sma_20_200_ratio", "psi": 0.07},
+            {"name": "volume_ratio_20d", "psi": 0.12},
+            {"name": "macd_histogram", "psi": 0.03},
+            {"name": "bb_width_20", "psi": 0.28},
+            {"name": "atr_pct_14", "psi": 0.06},
+            {"name": "obv_slope_10", "psi": 0.15},
+            {"name": "sector_momentum", "psi": 0.09},
+            {"name": "insider_net_30d", "psi": 0.02},
+            {"name": "pe_sector_rank", "psi": 0.11},
+        ],
+        "model_versions": [
+            {"version_id": "v1.2.0", "created_at": "2026-03-10", "sharpe": 1.45, "accuracy": 0.71, "is_active": True},
+            {"version_id": "v1.1.0", "created_at": "2026-03-03", "sharpe": 1.32, "accuracy": 0.68, "is_active": False},
+            {"version_id": "v1.0.0", "created_at": "2026-02-24", "sharpe": 1.18, "accuracy": 0.65, "is_active": False},
+        ],
+        "current_status": "ok",
+        "rolling_accuracy": 0.71,
+        "max_psi": 0.28,
+        "fallback_active": False,
+    }
+
+
 @router.get("/{strategy_name}/performance")
 async def get_strategy_performance(strategy_name: str):
     """Get backtest performance for a strategy."""
