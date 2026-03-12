@@ -44,7 +44,7 @@ An automated stock trading system for retail investors managing US equities thro
 └─────────────────────────────────────────────────────┘
 ```
 
-Modular monolith with Redis pub/sub for event-driven communication. Clean interfaces enforced by abstract base classes. See [Architecture ADR](docs/adrs/007-architecture.md).
+Modular monolith with Redis pub/sub for event-driven communication. Clean interfaces enforced by abstract base classes. See [Architecture ADR](specs/adrs/007-architecture.md).
 
 ## Quick Start
 
@@ -174,7 +174,7 @@ stock-analysis/
 │   └── monitoring/             # Prometheus metrics, alert manager
 ├── web/                        # React + TypeScript + TailwindCSS dashboard
 ├── tests/unit/                 # 669 unit tests
-├── docs/
+├── specs/
 │   ├── adrs/                   # Architecture Decision Records (001-010)
 │   ├── feature-specs.md        # Feature specifications (F-001 to F-008)
 │   └── roadmap.md              # Implementation roadmap and cost analysis
@@ -199,7 +199,7 @@ stock-analysis/
 | **Phase 2** | ML Signals (XGBoost) + Feature Engineering + Smart Execution | Implemented |
 | **Phase 3** | LLM Agent (Claude) + Full Automation | Not started |
 
-See [docs/roadmap.md](docs/roadmap.md) for detailed weekly plan and cost analysis.
+See [specs/roadmap.md](specs/roadmap.md) for detailed weekly plan and cost analysis.
 
 ## Cost
 
@@ -211,9 +211,9 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed weekly plan and cost analysi
 
 ## Documentation
 
-- [Architecture Decision Records](docs/adrs/) — 10 ADRs covering broker, data, ML, backtesting, stack, architecture, LLM, risk, and IBKR migration
-- [Feature Specifications](docs/feature-specs.md) — F-001 through F-008
-- [Implementation Roadmap](docs/roadmap.md) — Phased plan with exit criteria
+- [Architecture Decision Records](specs/adrs/) — 10 ADRs covering broker, data, ML, backtesting, stack, architecture, LLM, risk, and IBKR migration
+- [Feature Specifications](specs/feature-specs.md) — F-001 through F-008
+- [Implementation Roadmap](specs/roadmap.md) — Phased plan with exit criteria
 
 ## Disclaimer
 

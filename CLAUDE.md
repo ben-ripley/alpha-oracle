@@ -26,7 +26,7 @@ src/
 web/              # React dashboard (Portfolio, Strategies, Risk, Trades, Model Health pages)
 config/           # settings.yaml, risk_limits.yaml, Prometheus/Grafana configs
 tests/unit/       # 669 pytest tests
-docs/adrs/        # Architecture Decision Records (001-010)
+specs/adrs/        # Architecture Decision Records (001-010)
 ```
 
 ## Key Architecture Rules
