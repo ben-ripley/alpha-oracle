@@ -9,6 +9,7 @@ from src.core.models import Order, OrderSide, OrderStatus, OrderType
 from src.execution.broker_adapters.ibkr_adapter import (
     IBKRBrokerAdapter,
     _IBKR_STATUS_MAP,
+    _MAX_RECONNECT_ATTEMPTS,
 )
 
 
@@ -138,6 +139,90 @@ class TestEnsureConnected:
         ib_instance.connectAsync.assert_awaited_once_with(
             host="127.0.0.1", port=4002, clientId=1
         )
+
+    @pytest.mark.asyncio
+    async def test_retries_on_first_failure_then_succeeds(self, ib):
+        adapter, ib_instance, _ = ib
+        ib_instance.isConnected.return_value = False
+        # First attempt raises; second attempt succeeds (no side_effect = returns None).
+        ib_instance.connectAsync.side_effect = [ConnectionError("timeout"), None]
+
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            await adapter._ensure_connected()
+
+        assert ib_instance.connectAsync.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_raises_connection_error_after_max_retries(self, ib):
+        adapter, ib_instance, _ = ib
+        ib_instance.isConnected.return_value = False
+        ib_instance.connectAsync.side_effect = ConnectionError("gateway down")
+
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            with pytest.raises(ConnectionError, match="IBKR connect failed"):
+                await adapter._ensure_connected()
+
+        assert ib_instance.connectAsync.await_count == _MAX_RECONNECT_ATTEMPTS
+
+    @pytest.mark.asyncio
+    async def test_exponential_backoff_between_attempts(self, ib):
+        adapter, ib_instance, _ = ib
+        ib_instance.isConnected.return_value = False
+        ib_instance.connectAsync.side_effect = ConnectionError("gateway down")
+
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+            with pytest.raises(ConnectionError):
+                await adapter._ensure_connected()
+
+        # sleep is called between attempts: N-1 times for N attempts
+        assert mock_sleep.await_count == _MAX_RECONNECT_ATTEMPTS - 1
+        # Verify exponential growth: first sleep=2^1=2, second=2^2=4
+        sleep_args = [call.args[0] for call in mock_sleep.await_args_list]
+        assert sleep_args == [2 ** i for i in range(1, _MAX_RECONNECT_ATTEMPTS)]
+
+    @pytest.mark.asyncio
+    async def test_no_sleep_when_first_attempt_succeeds(self, ib):
+        adapter, ib_instance, _ = ib
+        ib_instance.isConnected.return_value = False
+        # connectAsync has no side_effect — succeeds immediately.
+
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+            await adapter._ensure_connected()
+
+        mock_sleep.assert_not_awaited()
+
+
+# ---------------------------------------------------------------------------
+# disconnect
+# ---------------------------------------------------------------------------
+
+class TestDisconnect:
+    @pytest.mark.asyncio
+    async def test_disconnect_calls_ib_disconnect_when_connected(self, ib):
+        adapter, ib_instance, _ = ib
+        ib_instance.isConnected.return_value = True
+
+        await adapter.disconnect()
+
+        ib_instance.disconnect.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_disconnect_skips_when_not_connected(self, ib):
+        adapter, ib_instance, _ = ib
+        ib_instance.isConnected.return_value = False
+
+        await adapter.disconnect()
+
+        ib_instance.disconnect.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_disconnect_swallows_exception(self, ib):
+        adapter, ib_instance, _ = ib
+        ib_instance.isConnected.return_value = True
+        ib_instance.disconnect.side_effect = RuntimeError("IB internal error")
+
+        # Must not propagate.
+        await adapter.disconnect()
 
 
 # ---------------------------------------------------------------------------

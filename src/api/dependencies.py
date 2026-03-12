@@ -75,3 +75,10 @@ async def get_storage():
         from src.data.storage import TimeSeriesStorage
         _storage = TimeSeriesStorage()
     return _storage
+
+
+async def close_broker() -> None:
+    """Disconnect the broker adapter if it has been initialized. Called on shutdown."""
+    global _broker
+    if _broker is not None and hasattr(_broker, "disconnect"):
+        await _broker.disconnect()

@@ -6,6 +6,8 @@ from datetime import datetime
 
 import structlog
 
+_MAX_RECONNECT_ATTEMPTS = 3
+
 from src.core.config import Settings
 from src.core.interfaces import BrokerAdapter
 from src.core.models import (
@@ -78,13 +80,48 @@ class IBKRBrokerAdapter(BrokerAdapter):
     # ------------------------------------------------------------------
 
     async def _ensure_connected(self) -> None:
-        if not self._ib.isConnected():
-            await self._ib.connectAsync(
-                host=self._host,
-                port=self._port,
-                clientId=self._client_id,
-            )
-            logger.info("ibkr_connected", host=self._host, port=self._port)
+        if self._ib.isConnected():
+            return
+
+        last_exc: Exception | None = None
+        for attempt in range(1, _MAX_RECONNECT_ATTEMPTS + 1):
+            try:
+                await self._ib.connectAsync(
+                    host=self._host,
+                    port=self._port,
+                    clientId=self._client_id,
+                )
+                logger.info(
+                    "ibkr_connected",
+                    host=self._host,
+                    port=self._port,
+                    attempt=attempt,
+                )
+                return
+            except Exception as exc:
+                last_exc = exc
+                if attempt < _MAX_RECONNECT_ATTEMPTS:
+                    wait = 2 ** attempt  # 2s, 4s, 8s
+                    logger.warning(
+                        "ibkr_reconnect_attempt",
+                        attempt=attempt,
+                        wait=wait,
+                        error=str(exc),
+                    )
+                    await asyncio.sleep(wait)
+
+        raise ConnectionError(
+            f"IBKR connect failed after {_MAX_RECONNECT_ATTEMPTS} attempts"
+        ) from last_exc
+
+    async def disconnect(self) -> None:
+        """Disconnect from IB Gateway / TWS. Called during application shutdown."""
+        try:
+            if self._ib.isConnected():
+                self._ib.disconnect()
+                logger.info("ibkr_disconnected")
+        except Exception:
+            logger.warning("ibkr_disconnect_failed", exc_info=True)
 
     def _make_contract(self, symbol: str):
         from ib_async import Stock  # noqa: PLC0415

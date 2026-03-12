@@ -1,8 +1,8 @@
 # ADR-001: Trading Platform - Alpaca
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-010](010-ibkr-broker-switch.md)
 
-**Decision:** Alpaca as primary broker, Interactive Brokers as upgrade path.
+**Decision (original):** Alpaca as primary broker, Interactive Brokers as upgrade path.
 
 | Criteria | Alpaca (chosen) | Interactive Brokers (alternative) |
 |---|---|---|
@@ -16,3 +16,5 @@
 **Why Alpaca:** Zero commissions, identical paper/live API (same code runs in both modes), excellent docs, FINRA/SIPC regulated. The system abstracts the broker behind a `BrokerAdapter` interface so we can swap to IBKR later if needed.
 
 **Why not others:** Robinhood, TD/Schwab, E*TRADE, Webull all have limited or undocumented APIs unsuitable for automated trading.
+
+**Supersession note:** Alpaca is not available to Canadian residents. Interactive Brokers was selected as the replacement. See ADR-010 for the full rationale and implementation details.

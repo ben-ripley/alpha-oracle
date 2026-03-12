@@ -1,11 +1,18 @@
 # Feature Specifications
 
 ## F-001: Data Ingestion Pipeline
-- Source adapters (Alpaca, Alpha Vantage, EDGAR) implementing `DataSourceInterface`
-- Redis-backed rate limiter (token bucket per source)
-- Normalizer: canonical schemas for OHLCV, fundamentals, filings
-- Storage: TimescaleDB (time-series) + DuckDB/Parquet (analytics)
-- Prefect orchestration: daily OHLCV, weekly fundamentals, 6-hourly filings, persistent WebSocket for real-time
+- Source adapters (IBKR, Alpha Vantage, EDGAR, FINRA) implementing `DataSourceInterface`
+  - `IBKRDataAdapter` — historical bars + latest bar via `reqHistoricalDataAsync`; rate-limited to 6 req/min
+  - `IBKRMarketFeed` — real-time quote streaming via `reqMktData`; auto-reconnects on disconnect
+  - `AlphaVantageAdapter` — 20+ yr daily OHLCV, fundamentals (OVERVIEW endpoint); 5 req/min free tier
+  - `EdgarAdapter` — SEC Form 4 insider transactions, 10-K/10-Q/8-K filings
+  - `FinraAdapter` — biweekly short interest data
+- Redis-backed rate limiter (token bucket per source) in `src/data/rate_limiter.py`
+- Normalizer: canonical schemas for OHLCV, fundamentals, filings (`src/data/normalizer.py`)
+- Storage: TimescaleDB time-series via `TimeSeriesStorage` + DuckDB/Parquet analytics
+- APScheduler cron jobs (not Prefect): `daily_bars_job`, `weekly_fundamentals_job`, `biweekly_altdata_job`, `weekly_retrain_job`
+  - All jobs are idempotent via Redis done-sets; per-symbol errors are isolated
+- One-time backfill: `scripts/backfill_history.py --years 2 --symbols sp500` (resumable via Redis)
 
 ## F-002: Strategy Engine
 - `BaseStrategy` class with `generate_signals()`, `get_parameters()`, `get_required_data()`
@@ -28,9 +35,14 @@
 ## F-004: Trade Execution Engine
 - Order generator: Signal + RiskCheck -> Order (Kelly criterion sizing, half-Kelly for safety)
 - Pre-trade risk check on every order (calls F-005)
-- `BrokerAdapter` interface with `AlpacaBrokerAdapter` implementation
-- Execution tracker: order status monitoring, fill events to Redis, audit trail in TimescaleDB
-- Smart order routing (Phase 2+): adaptive limit orders, TWAP/VWAP for larger orders
+- `BrokerAdapter` interface (`src/core/interfaces.py`) with three implementations:
+  - `IBKRBrokerAdapter` — live/paper trading via IB Gateway; exponential backoff reconnect
+  - `SimulatedBroker` — in-memory fill simulation using latest stored OHLCV close ± 0.05% slippage; no external deps
+  - `PaperStubBroker` — returns static demo data; rejects all orders (development fallback)
+- Provider selected by `SA_BROKER__PROVIDER` env var (`ibkr` / `simulated` / other)
+- Smart order router in `src/execution/router.py`: market/limit/TWAP based on ADV, spread, urgency
+  - Reads `bid_price`/`ask_price` keys from IBKR market feed
+- Execution quality tracker: slippage, latency, aggregation (`src/execution/quality.py`)
 
 ## F-005: Risk Management System
 - Pre-trade risk engine: synchronous APPROVE/REJECT/REQUIRE_HUMAN_APPROVAL

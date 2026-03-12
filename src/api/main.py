@@ -96,6 +96,13 @@ async def lifespan(app: FastAPI):
     if getattr(app.state, "market_feed", None) is not None:
         await app.state.market_feed.stop()
 
+    # Disconnect broker
+    try:
+        from src.api.dependencies import close_broker
+        await close_broker()
+    except Exception:
+        logger.warning("broker.shutdown_disconnect_failed", exc_info=True)
+
     logger.info("Shutting down stock-analysis API")
     await close_redis()
 

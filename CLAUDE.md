@@ -25,8 +25,8 @@ src/
   monitoring/     # Prometheus metrics, Slack/Telegram alerts
 web/              # React dashboard (Portfolio, Strategies, Risk, Trades, Model Health pages)
 config/           # settings.yaml, risk_limits.yaml, Prometheus/Grafana configs
-tests/unit/       # 421 pytest tests
-docs/adrs/        # Architecture Decision Records (001-009)
+tests/unit/       # 564 pytest tests
+docs/adrs/        # Architecture Decision Records (001-010)
 ```
 
 ## Key Architecture Rules
@@ -67,8 +67,19 @@ docs/adrs/        # Architecture Decision Records (001-009)
 ./scripts/clear_database.sh          # Remove seed/demo data from Redis (prepare for real data)
 cd web && npm run build              # Production build
 
+# Data backfill (one-time; requires SA_ALPHA_VANTAGE_API_KEY)
+python scripts/backfill_history.py --years 2 --symbols sp500   # ~1h40m on free AV tier
+python scripts/backfill_history.py --resume                     # resume interrupted run
+python scripts/backfill_history.py --years 2 --symbols AAPL,MSFT,GOOG  # quick smoke test
+
+# Trigger scheduler jobs manually (system must be running)
+# POST /api/system/scheduler/trigger/daily_bars
+# POST /api/system/scheduler/trigger/weekly_fundamentals
+# POST /api/system/scheduler/trigger/biweekly_altdata
+# POST /api/system/scheduler/trigger/weekly_retrain
+
 # Tests
-python -m pytest tests/ -v           # Run all tests (421 tests)
+python -m pytest tests/ -v           # Run all tests (564 tests)
 python -m pytest tests/unit/test_pdt_guard.py -v  # PDT guard tests only
 ```
 
@@ -79,10 +90,14 @@ Logs are written to `logs/backend.log` and `logs/frontend.log`. PID files live i
 - All strategies enforce `min_hold_days >= 2` (MLSignalStrategy uses `min_hold_days=3`) for PDT compliance
 - Feature store in `src/signals/feature_store.py` orchestrates all calculators with point-in-time joins and Parquet persistence
 - Model registry in `src/signals/ml/registry.py` handles register/promote/rollback; scheduler in `src/scheduling/` runs 4 APScheduler cron jobs
-- Smart order router in `src/execution/router.py` selects market/limit/TWAP based on ADV, spread, urgency
+- Smart order router in `src/execution/router.py` selects market/limit/TWAP based on ADV, spread, urgency; reads `bid_price`/`ask_price` keys from feed
 - WebSocket at `/ws` broadcasts Redis pub/sub events to dashboard
 - Kill switch requires typed confirmation ("KILL" or "RESUME")
 - API proxied from Vite dev server: `/api/*` → localhost:8000
+- **IBKR client ID scheme:** broker adapter = `client_id`, data adapter = `client_id+1`, market feed = `client_id+2` (default 1/2/3). Never reuse IDs across connections.
+- **Broker provider env var:** `SA_BROKER__PROVIDER` — values: `ibkr` (IB Gateway), `simulated` (in-memory SimulatedBroker), anything else (PaperStubBroker with demo data)
+- **Job idempotency Redis keys:** `jobs:daily_bars:{date}:done`, `jobs:weekly_fundamentals:{week}:done`, `jobs:altdata:last_run`, `backfill:completed`
+- **Lazy imports in job functions:** all adapter/storage classes are imported inside the job function body, not at module top-level. Patch at the source module path, e.g. `patch('src.data.storage.TimeSeriesStorage')`
 
 ## Phase Status
 - **Phase 1 (MVP):** Implemented — data, strategies, execution, risk, API, dashboard

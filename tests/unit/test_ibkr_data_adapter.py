@@ -59,13 +59,22 @@ def _bar(date, open_=150.0, high=155.0, low=148.0, close=152.0, volume=1_000_000
 
 @pytest.fixture()
 def data_ib(request):
-    """Yields (IBKRDataAdapter, ib_instance, mock_module)."""
+    """Yields (IBKRDataAdapter, ib_instance, mock_module).
+
+    RateLimiter is mocked so tests never touch Redis. The mock rate limiter is
+    accessible via ``adapter._rate_limiter`` for assertion in pacing tests.
+    """
     ib_instance = _ib_instance()
     mock_module = MagicMock()
     mock_module.IB.return_value = ib_instance
+    mock_rl = MagicMock()
+    mock_rl.acquire = AsyncMock()
     with patch.dict("sys.modules", {"ib_async": mock_module}):
-        adapter = IBKRDataAdapter(_settings())
-        yield adapter, ib_instance, mock_module
+        with patch(
+            "src.data.adapters.ibkr_data_adapter.RateLimiter", return_value=mock_rl
+        ):
+            adapter = IBKRDataAdapter(_settings())
+            yield adapter, ib_instance, mock_module
 
 
 @pytest.fixture()
@@ -595,3 +604,155 @@ class TestIBKRMarketFeedQueries:
         feed, _, _ = feed_ib
         result = await feed.get_spread("UNKNOWN")
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# IBKRDataAdapter — pacing rate limiter
+# ---------------------------------------------------------------------------
+
+class TestIBKRDataAdapterPacingLimiter:
+    @pytest.mark.asyncio
+    async def test_acquire_called_before_historical_bars_request(self, data_ib):
+        adapter, ib_instance, _ = data_ib
+        ib_instance.reqHistoricalDataAsync.return_value = []
+
+        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        await adapter.get_historical_bars("AAPL", start, end)
+
+        adapter._rate_limiter.acquire.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_acquire_called_before_latest_bar_request(self, data_ib):
+        adapter, ib_instance, _ = data_ib
+        ib_instance.reqHistoricalDataAsync.return_value = []
+
+        await adapter.get_latest_bar("AAPL")
+
+        adapter._rate_limiter.acquire.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_acquire_called_once_per_request(self, data_ib):
+        adapter, ib_instance, _ = data_ib
+        ib_instance.reqHistoricalDataAsync.return_value = []
+
+        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        await adapter.get_historical_bars("AAPL", start, end)
+        await adapter.get_historical_bars("MSFT", start, end)
+
+        assert adapter._rate_limiter.acquire.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_acquire_called_before_reqhistoricaldata_not_after(self, data_ib):
+        """Acquire must be awaited before the IB call, not after."""
+        adapter, ib_instance, _ = data_ib
+        call_order: list[str] = []
+
+        async def record_acquire():
+            call_order.append("acquire")
+
+        async def record_req(*args, **kwargs):
+            call_order.append("req")
+            return []
+
+        adapter._rate_limiter.acquire = AsyncMock(side_effect=record_acquire)
+        ib_instance.reqHistoricalDataAsync = AsyncMock(side_effect=record_req)
+
+        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        await adapter.get_historical_bars("AAPL", start, end)
+
+        assert call_order == ["acquire", "req"]
+
+
+# ---------------------------------------------------------------------------
+# IBKRMarketFeed — disconnect / reconnect
+# ---------------------------------------------------------------------------
+
+class TestIBKRMarketFeedReconnect:
+    def test_on_disconnect_sets_connected_false(self, feed_ib):
+        feed, _, _ = feed_ib
+        feed._connected = True
+
+        with patch("asyncio.ensure_future"):
+            feed._on_disconnect()
+
+        assert feed._connected is False
+
+    def test_on_disconnect_schedules_handle_disconnect(self, feed_ib):
+        feed, _, _ = feed_ib
+
+        with patch("asyncio.ensure_future") as mock_future:
+            feed._on_disconnect()
+
+        mock_future.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_start_registers_disconnect_handler(self, feed_ib):
+        feed, ib_instance, _ = feed_ib
+        # Capture the event mock before start() replaces it via +=.
+        original_event = ib_instance.disconnectedEvent
+        await feed.start()
+        original_event.__iadd__.assert_called_once_with(feed._on_disconnect)
+
+    @pytest.mark.asyncio
+    async def test_reconnect_loop_resubscribes_symbols(self, feed_ib):
+        feed, ib_instance, _ = feed_ib
+        ib_instance.connectAsync = AsyncMock()
+        mock_ticker = MagicMock()
+        mock_ticker.updateEvent = MagicMock()
+        ib_instance.reqMktData.return_value = mock_ticker
+
+        feed._tickers = {"AAPL": mock_ticker, "MSFT": mock_ticker}
+
+        mock_redis = AsyncMock()
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            with patch("src.data.feeds.ibkr_feed.get_redis", return_value=mock_redis):
+                await feed._reconnect_loop()
+
+        assert feed._connected is True
+        assert "AAPL" in feed._tickers
+        assert "MSFT" in feed._tickers
+
+    @pytest.mark.asyncio
+    async def test_reconnect_loop_publishes_reconnected_event(self, feed_ib):
+        feed, ib_instance, _ = feed_ib
+        ib_instance.connectAsync = AsyncMock()
+        ib_instance.reqMktData.return_value = MagicMock(updateEvent=MagicMock())
+
+        mock_redis = AsyncMock()
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            with patch("src.data.feeds.ibkr_feed.get_redis", return_value=mock_redis):
+                await feed._reconnect_loop()
+
+        published = [call.args[0] for call in mock_redis.publish.call_args_list]
+        assert "system:feed:reconnected" in published
+
+    @pytest.mark.asyncio
+    async def test_handle_disconnect_publishes_disconnected_event(self, feed_ib):
+        feed, ib_instance, _ = feed_ib
+        ib_instance.connectAsync = AsyncMock()
+        ib_instance.reqMktData.return_value = MagicMock(updateEvent=MagicMock())
+
+        mock_redis = AsyncMock()
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            with patch("src.data.feeds.ibkr_feed.get_redis", return_value=mock_redis):
+                await feed._handle_disconnect()
+
+        published = [call.args[0] for call in mock_redis.publish.call_args_list]
+        assert "system:feed:disconnected" in published
+
+    @pytest.mark.asyncio
+    async def test_reconnect_loop_exhaustion_does_not_raise(self, feed_ib):
+        """If all reconnect attempts fail the loop should log and return, not raise."""
+        feed, ib_instance, _ = feed_ib
+        ib_instance.connectAsync = AsyncMock(side_effect=ConnectionError("gateway down"))
+
+        mock_redis = AsyncMock()
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            with patch("src.data.feeds.ibkr_feed.get_redis", return_value=mock_redis):
+                # Must complete without raising.
+                await feed._reconnect_loop()
+
+        assert feed._connected is False

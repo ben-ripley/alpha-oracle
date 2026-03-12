@@ -4,7 +4,7 @@ An automated stock trading system for retail investors managing US equities thro
 
 ## Key Features
 
-- **Data Ingestion** — Alpaca (real-time WebSocket), Alpha Vantage (historical/fundamentals), SEC EDGAR (filings), FINRA short interest
+- **Data Ingestion** — IBKR (real-time WebSocket via IB Gateway), Alpha Vantage (historical OHLCV + fundamentals), SEC EDGAR (filings), FINRA short interest
 - **Universe Management** — S&P 500 constituent tracking with Wikipedia scrape, Redis cache, and CSV fallback
 - **Feature Engineering** — 50+ point-in-time features: technical (RSI, MACD, BB, ATR, OBV), fundamental (sector percentiles, quality score), cross-asset (SPY beta, VIX regime), alternative (insider signals, short interest z-score)
 - **ML Pipeline** — XGBoost with walk-forward validation, Optuna hyperparameter tuning, isotonic/Platt confidence calibration
@@ -53,8 +53,9 @@ Modular monolith with Redis pub/sub for event-driven communication. Clean interf
 - Docker & Docker Compose
 - Python 3.11+
 - Node.js 18+
-- [Alpaca](https://alpaca.markets/) account (free, for paper trading)
-- [Alpha Vantage](https://www.alphavantage.co/) API key (free tier)
+- [Alpha Vantage](https://www.alphavantage.co/) API key (free tier — for historical data and fundamentals)
+- **For live/paper trading:** Interactive Brokers account + [IB Gateway](https://www.interactivebrokers.com/en/trading/ibgateway.php) running locally
+- **Without IB Gateway:** set `SA_BROKER__PROVIDER=simulated` to use the in-memory SimulatedBroker
 
 ### Setup
 
@@ -111,6 +112,7 @@ All lifecycle scripts live in `scripts/`. They manage background processes via P
 | `./scripts/stop-frontend.sh` | Stop Vite dev server |
 | `./scripts/restart-frontend.sh` | Restart Vite dev server |
 | `./scripts/clear_database.sh` | Delete all seed/demo keys from Redis, ready for real data |
+| `python scripts/backfill_history.py` | Backfill 2 years of OHLCV for S&P 500 (resumable; tracks progress in Redis) |
 
 ## Dashboard
 
@@ -171,9 +173,9 @@ stock-analysis/
 │   ├── api/                    # FastAPI REST + WebSocket endpoints
 │   └── monitoring/             # Prometheus metrics, alert manager
 ├── web/                        # React + TypeScript + TailwindCSS dashboard
-├── tests/unit/                 # 421 unit tests
+├── tests/unit/                 # 564 unit tests
 ├── docs/
-│   ├── adrs/                   # Architecture Decision Records (001-009)
+│   ├── adrs/                   # Architecture Decision Records (001-010)
 │   ├── feature-specs.md        # Feature specifications (F-001 to F-008)
 │   └── roadmap.md              # Implementation roadmap and cost analysis
 └── scripts/
@@ -185,6 +187,7 @@ stock-analysis/
     ├── restart-frontend.sh     # Restart Vite dev server
     ├── clear_database.sh       # Remove seed/demo data from Redis
     ├── seed_demo_data.py       # Populate Redis with demo data for UI testing
+    ├── backfill_history.py     # One-time historical OHLCV backfill (resumable)
     └── init_db.sql             # TimescaleDB schema (10 hypertables)
 ```
 
@@ -208,7 +211,7 @@ See [docs/roadmap.md](docs/roadmap.md) for detailed weekly plan and cost analysi
 
 ## Documentation
 
-- [Architecture Decision Records](docs/adrs/) — 9 ADRs covering broker, data, ML, backtesting, stack, architecture, LLM, and risk
+- [Architecture Decision Records](docs/adrs/) — 10 ADRs covering broker, data, ML, backtesting, stack, architecture, LLM, risk, and IBKR migration
 - [Feature Specifications](docs/feature-specs.md) — F-001 through F-008
 - [Implementation Roadmap](docs/roadmap.md) — Phased plan with exit criteria
 
