@@ -29,18 +29,9 @@ async def get_broker() -> BrokerAdapter:
         if provider == "ibkr":
             from src.execution.broker_adapters.ibkr_adapter import IBKRBrokerAdapter
             _broker = IBKRBrokerAdapter(settings)
-        elif provider == "alpaca":
-            if settings.alpaca_api_key and settings.alpaca_secret_key:
-                from src.execution.broker_adapters.alpaca_adapter import AlpacaBrokerAdapter
-                _broker = AlpacaBrokerAdapter(settings)
-            else:
-                from src.execution.broker_adapters.paper_stub import PaperStubBroker
-                _broker = PaperStubBroker()
         else:
-            raise ValueError(
-                f"Unknown broker provider '{settings.broker.provider}'. "
-                "Valid options: alpaca, ibkr"
-            )
+            from src.execution.broker_adapters.paper_stub import PaperStubBroker
+            _broker = PaperStubBroker()
 
     return _broker
 

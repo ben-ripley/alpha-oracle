@@ -4,9 +4,8 @@ app:
   log_level: INFO
 
 broker:
-  provider: alpaca        # alpaca | ibkr
+  provider: ibkr
   paper_trading: true
-  base_url: https://paper-api.alpaca.markets
   ibkr:
     host: 127.0.0.1
     port: 4002            # IB Gateway paper=4002, live=4001; TWS paper=7497, live=7496
@@ -14,9 +13,6 @@ broker:
     account_id: ""        # leave blank for single-account setups
 
 data:
-  alpaca:
-    feed: iex  # iex (free) | sip (paid)
-    max_bars_per_request: 10000
   alpha_vantage:
     rate_limit_per_minute: 5
     cache_ttl_hours: 24

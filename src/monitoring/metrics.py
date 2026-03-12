@@ -113,7 +113,7 @@ class TradingMetrics:
     data_fetch_total = Counter(
         "trading_data_fetch_total",
         "Total data fetch operations",
-        ["source", "status"],  # source: alpaca/alpha_vantage/edgar, status: success/error
+        ["source", "status"],  # source: ibkr/alpha_vantage/edgar, status: success/error
     )
     data_fetch_latency = Histogram(
         "trading_data_fetch_latency_seconds",

@@ -51,10 +51,10 @@ class TestOHLCV:
             low=395.0,
             close=405.0,
             volume=3000000,
-            source="alpaca",
+            source="ibkr",
             adjusted_close=404.50,
         )
-        assert bar.source == "alpaca"
+        assert bar.source == "ibkr"
         assert bar.adjusted_close == 404.50
 
     def test_serialization_round_trip(self):

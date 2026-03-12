@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.data.feeds.base import MarketDataFeed
-from src.data.feeds.alpaca_feed import AlpacaMarketFeed
 
 
 # ---------------------------------------------------------------------------
@@ -37,53 +36,59 @@ def test_abc_incomplete_subclass():
 # ---------------------------------------------------------------------------
 
 
-def _make_feed() -> AlpacaMarketFeed:
-    """Create an AlpacaMarketFeed with mocked settings."""
+def _make_feed():
+    """Create an IBKRMarketFeed with fully mocked ib_async."""
     settings = MagicMock()
-    settings.alpaca_api_key = "test-key"
-    settings.alpaca_secret_key = "test-secret"
-    settings.data.feed.feed_type = "iex"
+    settings.broker.ibkr.host = "127.0.0.1"
+    settings.broker.ibkr.port = 4002
+    settings.broker.ibkr.client_id = 1
     settings.data.feed.symbols_per_connection = 200
     settings.data.feed.reconnect_delay_seconds = 1
     settings.data.feed.max_reconnect_attempts = 3
-    return AlpacaMarketFeed(settings=settings)
+
+    ib_instance = MagicMock()
+    ib_instance.isConnected.return_value = False
+    mock_ib_module = MagicMock()
+    mock_ib_module.IB.return_value = ib_instance
+
+    with patch.dict("sys.modules", {"ib_async": mock_ib_module}):
+        from src.data.feeds.ibkr_feed import IBKRMarketFeed
+        feed = IBKRMarketFeed(settings=settings)
+
+    return feed
 
 
-def _make_bar(symbol: str = "AAPL") -> MagicMock:
-    bar = MagicMock()
-    bar.symbol = symbol
-    bar.timestamp = datetime(2026, 3, 11, 16, 0, 0, tzinfo=timezone.utc)
-    bar.open = 150.0
-    bar.high = 152.0
-    bar.low = 149.0
-    bar.close = 151.5
-    bar.volume = 1000000
-    bar.vwap = 150.8
-    return bar
-
-
-def _make_quote(symbol: str = "AAPL") -> MagicMock:
-    quote = MagicMock()
-    quote.symbol = symbol
-    quote.timestamp = datetime(2026, 3, 11, 16, 0, 0, tzinfo=timezone.utc)
-    quote.bid_price = 151.40
-    quote.bid_size = 100.0
-    quote.ask_price = 151.50
-    quote.ask_size = 200.0
-    return quote
+def _make_ticker(
+    symbol: str = "AAPL",
+    bid: float = 151.40,
+    ask: float = 151.50,
+    last: float = 151.5,
+) -> MagicMock:
+    ticker = MagicMock()
+    ticker.bid = bid
+    ticker.ask = ask
+    ticker.last = last
+    ticker.open = 150.0
+    ticker.high = 152.0
+    ticker.low = 149.0
+    ticker.volume = 1000000
+    ticker.vwap = 150.8
+    ticker.bidSize = 100.0
+    ticker.askSize = 200.0
+    return ticker
 
 
 # ---------------------------------------------------------------------------
-# 2. AlpacaMarketFeed stores latest bar on callback
+# 2. IBKRMarketFeed stores latest bar on ticker callback
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_handle_bar_stores_latest():
+async def test_handle_ticker_stores_latest_bar():
     feed = _make_feed()
     mock_redis = AsyncMock()
-    with patch("src.data.feeds.alpaca_feed.get_redis", return_value=mock_redis):
-        await feed._handle_bar(_make_bar("AAPL"))
+    with patch("src.data.feeds.ibkr_feed.get_redis", return_value=mock_redis):
+        await feed._handle_ticker("AAPL", _make_ticker("AAPL"))
 
     assert "AAPL" in feed._latest_bars
     bar_data = feed._latest_bars["AAPL"]
@@ -93,20 +98,20 @@ async def test_handle_bar_stores_latest():
 
 
 # ---------------------------------------------------------------------------
-# 3. AlpacaMarketFeed publishes bar to Redis channel
+# 3. IBKRMarketFeed publishes bar to Redis channel
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_handle_bar_publishes_to_redis():
+async def test_handle_ticker_publishes_bar_to_redis():
     feed = _make_feed()
     mock_redis = AsyncMock()
-    with patch("src.data.feeds.alpaca_feed.get_redis", return_value=mock_redis):
-        await feed._handle_bar(_make_bar("MSFT"))
+    with patch("src.data.feeds.ibkr_feed.get_redis", return_value=mock_redis):
+        await feed._handle_ticker("MSFT", _make_ticker("MSFT"))
 
-    mock_redis.publish.assert_called_once()
-    channel = mock_redis.publish.call_args[0][0]
-    assert channel == "market:bars:MSFT"
+    # Should publish to both quote and bar channels
+    published_channels = [call[0][0] for call in mock_redis.publish.call_args_list]
+    assert "market:bars:MSFT" in published_channels
 
 
 # ---------------------------------------------------------------------------
@@ -118,8 +123,8 @@ async def test_handle_bar_publishes_to_redis():
 async def test_get_latest_quote_returns_stored():
     feed = _make_feed()
     mock_redis = AsyncMock()
-    with patch("src.data.feeds.alpaca_feed.get_redis", return_value=mock_redis):
-        await feed._handle_quote(_make_quote("AAPL"))
+    with patch("src.data.feeds.ibkr_feed.get_redis", return_value=mock_redis):
+        await feed._handle_ticker("AAPL", _make_ticker("AAPL"))
 
     result = await feed.get_latest_quote("AAPL")
     assert result is not None
@@ -137,8 +142,8 @@ async def test_get_latest_quote_returns_stored():
 async def test_get_spread_calculates_correctly():
     feed = _make_feed()
     mock_redis = AsyncMock()
-    with patch("src.data.feeds.alpaca_feed.get_redis", return_value=mock_redis):
-        await feed._handle_quote(_make_quote("AAPL"))
+    with patch("src.data.feeds.ibkr_feed.get_redis", return_value=mock_redis):
+        await feed._handle_ticker("AAPL", _make_ticker("AAPL"))
 
     spread = await feed.get_spread("AAPL")
     assert spread is not None

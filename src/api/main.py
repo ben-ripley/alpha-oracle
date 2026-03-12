@@ -26,11 +26,8 @@ async def lifespan(app: FastAPI):
         if provider == "ibkr":
             from src.data.feeds.ibkr_feed import IBKRMarketFeed
             feed = IBKRMarketFeed(settings)
-        elif settings.alpaca_api_key and settings.alpaca_secret_key:
-            from src.data.feeds.alpaca_feed import AlpacaMarketFeed
-            feed = AlpacaMarketFeed(settings)
         else:
-            logger.warning("feed.skipped_no_credentials", provider=provider)
+            logger.warning("feed.skipped_unknown_provider", provider=provider)
             app.state.market_feed = None
             feed = None
 

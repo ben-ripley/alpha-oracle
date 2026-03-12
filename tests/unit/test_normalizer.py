@@ -6,87 +6,10 @@ from datetime import datetime, timezone
 import pytest
 
 from src.data.normalizer import (
-    normalize_alpaca_bars,
     normalize_av_bars,
     normalize_av_fundamentals,
     normalize_edgar_filing,
 )
-
-
-class TestAlpacaBars:
-    """Tests for Alpaca bar normalization."""
-
-    def test_short_key_names_mapped_correctly(self):
-        """Short key names (o, h, l, c, v, t) mapped correctly."""
-        raw_bars = [
-            {
-                "t": datetime(2024, 1, 5, 14, 30, tzinfo=timezone.utc),
-                "o": 150.0,
-                "h": 152.5,
-                "l": 149.0,
-                "c": 151.0,
-                "v": 1_000_000,
-            }
-        ]
-
-        result = normalize_alpaca_bars(raw_bars, "AAPL")
-
-        assert len(result) == 1
-        bar = result[0]
-        assert bar.symbol == "AAPL"
-        assert bar.open == 150.0
-        assert bar.high == 152.5
-        assert bar.low == 149.0
-        assert bar.close == 151.0
-        assert bar.volume == 1_000_000
-        assert bar.source == "alpaca"
-
-    def test_long_key_names_mapped_correctly(self):
-        """Long key names (open, high, low, close, volume, timestamp) mapped correctly."""
-        raw_bars = [
-            {
-                "timestamp": datetime(2024, 1, 5, 14, 30, tzinfo=timezone.utc),
-                "open": 150.0,
-                "high": 152.5,
-                "low": 149.0,
-                "close": 151.0,
-                "volume": 1_000_000,
-            }
-        ]
-
-        result = normalize_alpaca_bars(raw_bars, "MSFT")
-
-        assert len(result) == 1
-        bar = result[0]
-        assert bar.symbol == "MSFT"
-        assert bar.open == 150.0
-        assert bar.high == 152.5
-        assert bar.low == 149.0
-        assert bar.close == 151.0
-        assert bar.volume == 1_000_000
-
-    def test_timestamp_string_parsed_correctly(self):
-        """Timestamp string parsed correctly (ISO format with Z suffix)."""
-        raw_bars = [
-            {
-                "t": "2024-01-05T14:30:00Z",
-                "o": 150.0,
-                "h": 152.5,
-                "l": 149.0,
-                "c": 151.0,
-                "v": 1_000_000,
-            }
-        ]
-
-        result = normalize_alpaca_bars(raw_bars, "GOOG")
-
-        assert len(result) == 1
-        bar = result[0]
-        assert bar.timestamp.year == 2024
-        assert bar.timestamp.month == 1
-        assert bar.timestamp.day == 5
-        assert bar.timestamp.hour == 14
-        assert bar.timestamp.minute == 30
 
 
 class TestAVBars:

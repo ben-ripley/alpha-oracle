@@ -9,13 +9,13 @@ Swing/position trading only — no day trading (PDT rule: max 3 day trades per 5
 - **Frontend:** React 18, TypeScript, TailwindCSS, Vite, Recharts
 - **ML (Phase 2):** XGBoost, scikit-learn
 - **Infra:** Docker Compose (TimescaleDB, Redis, Prometheus, Grafana)
-- **Broker:** Alpaca (paper + live, identical API)
+- **Broker:** Interactive Brokers (IBKR) via IB Gateway / TWS
 
 ## Project Structure
 ```
 src/
   core/           # Models (Pydantic), interfaces (ABCs), config, database, redis
-  data/           # Ingestion: Alpaca/AlphaVantage/EDGAR/FINRA adapters; feeds; parsers; universe
+  data/           # Ingestion: IBKR/AlphaVantage/EDGAR/FINRA adapters; feeds; parsers; universe
   strategy/       # Engine, backtest (Backtrader/VectorBT), builtin strategies, ranker
   signals/        # Feature store (50+ PIT features), XGBoost pipeline, ML strategy, model monitoring
   scheduling/     # APScheduler cron jobs (bars, fundamentals, alt data, retrain), model registry

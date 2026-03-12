@@ -51,8 +51,8 @@ async def get_system_config():
         },
         "data": {
             "price_source": settings.broker.provider.lower(),
-            "alpaca_feed": settings.data.alpaca.feed if settings.broker.provider.lower() == "alpaca" else None,
-            "ibkr_port": settings.broker.ibkr.port if settings.broker.provider.lower() == "ibkr" else None,
+            "ibkr_host": settings.broker.ibkr.host,
+            "ibkr_port": settings.broker.ibkr.port,
             "alpha_vantage_rate_limit": settings.data.alpha_vantage.rate_limit_per_minute,
         },
         "strategy": {

@@ -1,6 +1,6 @@
 """Stub broker adapter that returns demo portfolio data when no real broker is configured.
 
-Used during local development/testing when Alpaca API keys are not available.
+Used during local development/testing when IB Gateway / TWS is not running.
 """
 from __future__ import annotations
 
@@ -60,13 +60,13 @@ class PaperStubBroker(BrokerAdapter):
     def __init__(self) -> None:
         logger.warning(
             "paper_stub_broker_initialized",
-            msg="No Alpaca API keys configured — using stub broker with demo data",
+            msg="IB Gateway / TWS not reachable — using stub broker with demo data",
         )
 
     async def submit_order(self, order: Order) -> Order:
         order.broker_order_id = f"stub-{uuid.uuid4()}"
         order.status = OrderStatus.REJECTED
-        order.metadata["rejection_reason"] = "Stub broker — configure Alpaca API keys to trade"
+        order.metadata["rejection_reason"] = "Stub broker — connect IB Gateway / TWS to trade"
         logger.warning("stub_broker_order_rejected", symbol=order.symbol)
         return order
 

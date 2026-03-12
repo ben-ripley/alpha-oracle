@@ -26,15 +26,9 @@ class IBKRSettings(BaseSettings):
 
 
 class BrokerSettings(BaseSettings):
-    provider: str = "alpaca"  # alpaca | ibkr
+    provider: str = "ibkr"
     paper_trading: bool = True
-    base_url: str = "https://paper-api.alpaca.markets"
     ibkr: IBKRSettings = IBKRSettings()
-
-
-class AlpacaDataSettings(BaseSettings):
-    feed: str = "iex"
-    max_bars_per_request: int = 10000
 
 
 class AlphaVantageDataSettings(BaseSettings):
@@ -66,7 +60,6 @@ class FinraSettings(BaseSettings):
 
 
 class DataSettings(BaseSettings):
-    alpaca: AlpacaDataSettings = AlpacaDataSettings()
     alpha_vantage: AlphaVantageDataSettings = AlphaVantageDataSettings()
     edgar: EdgarDataSettings = EdgarDataSettings()
     universe: UniverseSettings = UniverseSettings()
@@ -215,8 +208,6 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # API keys from env
-    alpaca_api_key: str = ""
-    alpaca_secret_key: str = ""
     alpha_vantage_api_key: str = ""
     anthropic_api_key: str = ""
 

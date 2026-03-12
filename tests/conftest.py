@@ -7,10 +7,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-# Ensure settings don't try to load .env or connect to real services
-os.environ.setdefault("SA_ALPACA_API_KEY", "test_key")
-os.environ.setdefault("SA_ALPACA_SECRET_KEY", "test_secret")
-
 from src.core.models import (
     BacktestResult,
     OHLCV,
