@@ -19,6 +19,11 @@ data:
   edgar:
     user_agent: "stock-analysis bot@example.com"
     rate_limit_per_second: 10
+  feed:
+    feed_type: iex          # iex (free, delayed) | sip (paid, real-time)
+    symbols_per_connection: 200
+    reconnect_delay_seconds: 5
+    max_reconnect_attempts: 10
 
 database:
   url: postgresql+asyncpg://trader:dev_password@localhost:5432/stock_analysis

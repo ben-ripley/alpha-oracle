@@ -169,6 +169,50 @@ class TestDurationStr:
         result = _duration_str(start, end, "5Min")
         assert result.endswith(" D") or result.endswith(" S")
 
+    def test_single_day_window_returns_one_day(self):
+        """start == end (same day) must not produce zero — minimum is 1 D."""
+        same_day = datetime(2024, 6, 15, tzinfo=timezone.utc)
+        result = _duration_str(same_day, same_day, "1Day")
+        assert result == "1 D"
+
+    def test_364_day_window_stays_in_days(self):
+        """364-day difference → delta_days = 365 ≤ 365 threshold → returns N D, not Y."""
+        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2024, 12, 30, tzinfo=timezone.utc)  # 364-day diff; +1 = 365
+        result = _duration_str(start, end, "1Day")
+        # delta_days = 364 + 1 = 365 ≤ 365 → "365 D"
+        assert result == "365 D"
+
+    def test_two_year_window_returns_two_years(self):
+        """~730 days should round to 2 Y."""
+        start = datetime(2022, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2024, 1, 1, tzinfo=timezone.utc)  # 730 or 731 days
+        result = _duration_str(start, end, "1Day")
+        assert result == "2 Y"
+
+    def test_three_year_window_returns_three_years(self):
+        """~1095 days should round to 3 Y."""
+        start = datetime(2021, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        result = _duration_str(start, end, "1Day")
+        assert result == "3 Y"
+
+    def test_intraday_within_day_produces_seconds_string(self):
+        """Short intraday range (< 1 day) must produce an 'N S' duration."""
+        start = datetime(2024, 3, 5, 14, 0, tzinfo=timezone.utc)
+        end = datetime(2024, 3, 5, 16, 30, tzinfo=timezone.utc)  # 2.5 hours
+        result = _duration_str(start, end, "1Min")
+        # total_seconds ≈ 9000 + 3600 buffer = 12600 < 86400 → "N S"
+        assert result.endswith(" S")
+        assert int(result.split()[0]) > 9000
+
+    def test_1hour_timeframe_always_uses_days(self):
+        """1Hour bars always use day-based duration regardless of window size."""
+        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2024, 1, 5, tzinfo=timezone.utc)
+        result = _duration_str(start, end, "1Hour")
+        assert result.endswith(" D")
+
 
 # ---------------------------------------------------------------------------
 # IBKRDataAdapter — get_historical_bars

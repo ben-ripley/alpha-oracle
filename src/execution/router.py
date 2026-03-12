@@ -37,8 +37,8 @@ class SmartOrderRouter:
             logger.warning("feed_data_unavailable", symbol=order.symbol)
             return [order]
 
-        bid = quote.get("bid", 0.0)
-        ask = quote.get("ask", 0.0)
+        bid = quote.get("bid_price", 0.0)
+        ask = quote.get("ask_price", 0.0)
 
         if bid <= 0 or ask <= 0:
             return [order]

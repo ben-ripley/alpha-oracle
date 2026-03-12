@@ -18,9 +18,12 @@ async def system_health():
 
     try:
         broker = await get_broker()
-        checks["broker"] = await broker.health_check()
+        ibkr_ok = await broker.health_check()
+        checks["broker"] = ibkr_ok
+        checks["ibkr_gateway"] = ibkr_ok
     except Exception:
         checks["broker"] = False
+        checks["ibkr_gateway"] = False
 
     try:
         from src.core.redis import get_redis
