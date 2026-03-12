@@ -29,6 +29,9 @@ async def get_broker() -> BrokerAdapter:
         if provider == "ibkr":
             from src.execution.broker_adapters.ibkr_adapter import IBKRBrokerAdapter
             _broker = IBKRBrokerAdapter(settings)
+        elif provider == "simulated":
+            from src.execution.broker_adapters.simulated_broker import SimulatedBroker
+            _broker = SimulatedBroker()
         else:
             from src.execution.broker_adapters.paper_stub import PaperStubBroker
             _broker = PaperStubBroker()

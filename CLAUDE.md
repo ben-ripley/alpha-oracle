@@ -25,7 +25,7 @@ src/
   monitoring/     # Prometheus metrics, Slack/Telegram alerts
 web/              # React dashboard (Portfolio, Strategies, Risk, Trades, Model Health pages)
 config/           # settings.yaml, risk_limits.yaml, Prometheus/Grafana configs
-tests/unit/       # 564 pytest tests
+tests/unit/       # 669 pytest tests
 docs/adrs/        # Architecture Decision Records (001-010)
 ```
 
@@ -34,7 +34,7 @@ docs/adrs/        # Architecture Decision Records (001-010)
 - **Abstract interfaces** in `src/core/interfaces.py`: `DataSourceInterface`, `BaseStrategy`, `BrokerAdapter`, `RiskManager`, `BacktestEngine`
 - **All models** in `src/core/models.py` — Pydantic BaseModel throughout
 - **Config** loaded from YAML + env vars via Pydantic Settings (`src/core/config.py`)
-- **Lazy imports** in `__init__.py` files for modules with heavy deps (alpaca, backtrader, pandas_ta)
+- **Lazy imports** in `__init__.py` files for modules with heavy deps (backtrader, pandas_ta)
 
 ## Critical Safety: PDT Guard
 `src/risk/pdt_guard.py` is the most critical component. It prevents FINRA PDT violations.
@@ -79,7 +79,7 @@ python scripts/backfill_history.py --years 2 --symbols AAPL,MSFT,GOOG  # quick s
 # POST /api/system/scheduler/trigger/weekly_retrain
 
 # Tests
-python -m pytest tests/ -v           # Run all tests (564 tests)
+python -m pytest tests/ -v           # Run all tests (669 tests)
 python -m pytest tests/unit/test_pdt_guard.py -v  # PDT guard tests only
 ```
 

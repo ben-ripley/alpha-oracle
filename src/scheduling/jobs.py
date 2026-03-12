@@ -227,14 +227,109 @@ async def biweekly_altdata_job() -> None:
 
 
 async def weekly_retrain_job() -> None:
-    """Retrain ML model with latest data. Only promote if new model beats current."""
+    """Retrain XGBoost model on latest stored features.
+
+    For each universe symbol, loads OHLCV bars from TimescaleDB, computes
+    features via FeatureStore, and derives a 3-class directional target from
+    forward close returns.  All per-symbol frames are concatenated before
+    training so the model learns across the full universe.
+
+    A new model is only promoted to active when it outperforms the current
+    champion on sharpe_ratio (or when no champion exists).
+    """
     logger.info("job.weekly_retrain.start")
     try:
+        import pandas as pd
+
+        from src.data.storage import TimeSeriesStorage
+        from src.data.universe import SymbolUniverse
+        from src.signals.feature_store import FeatureStore
+        from src.signals.ml.pipeline import MLPipeline
         from src.signals.ml.registry import ModelRegistry
 
+        universe = SymbolUniverse()
+        symbols = await universe.get_symbols()
+
+        if not symbols:
+            logger.warning("job.weekly_retrain.no_symbols")
+            return
+
+        now = datetime.now(timezone.utc)
+        two_years_ago = now - timedelta(days=730)
+
+        storage = TimeSeriesStorage()
+        store = FeatureStore()
+        pipeline = MLPipeline()
+
+        all_features: list = []
+        all_targets: list = []
+
+        for symbol in symbols:
+            try:
+                bars = await storage.get_ohlcv(symbol, two_years_ago, now)
+                if not bars:
+                    continue
+
+                feat_df = store.compute_features(symbol, bars)
+                if feat_df.empty:
+                    continue
+
+                # Add close prices for target generation.
+                # Must be done per-symbol so forward-return shift doesn't bleed
+                # across symbol boundaries.
+                close_series = pd.Series(
+                    {b.timestamp: b.close for b in bars},
+                    name="close",
+                )
+                feat_df["close"] = close_series.reindex(feat_df.index)
+
+                target = pipeline.prepare_target(feat_df, close_col="close")
+
+                # Drop non-feature columns before training
+                feat_df = feat_df.drop(columns=["close", "symbol"], errors="ignore")
+
+                all_features.append(feat_df)
+                all_targets.append(target)
+
+            except Exception:
+                logger.warning(
+                    "job.weekly_retrain.symbol_error", symbol=symbol, exc_info=True
+                )
+
+        if not all_features:
+            logger.warning("job.weekly_retrain.no_features")
+            return
+
+        features_df = pd.concat(all_features)
+        target_series = pd.concat(all_targets)
+
+        n_clean = int(target_series.notna().sum())
+        if n_clean < pipeline.config.min_training_samples:
+            logger.warning(
+                "job.weekly_retrain.insufficient_data",
+                clean_rows=n_clean,
+                required=pipeline.config.min_training_samples,
+            )
+            return
+
+        metrics = pipeline.train(features_df, target_series)
+
+        version_id = f"v{now.strftime('%Y%m%d_%H%M%S')}"
+        model_path = f"models/{version_id}.joblib"
+        pipeline.save_model(model_path)
+
         registry = ModelRegistry()
-        # Placeholder: actual training + validation would happen here
-        # New model is only promoted if it beats the current model's metrics
-        logger.info("job.weekly_retrain.complete")
+        registry.register(version_id, model_path, metrics)
+
+        champion = registry.get_active()
+        champion_metrics = champion.metrics if champion else None
+        if registry.should_promote(metrics, champion_metrics):
+            registry.promote(version_id)
+            logger.info("job.weekly_retrain.promoted", version=version_id, **metrics)
+        else:
+            logger.info("job.weekly_retrain.not_promoted", **metrics)
+
+        logger.info("job.weekly_retrain.complete", **metrics)
+
     except Exception:
         logger.exception("job.weekly_retrain.error")

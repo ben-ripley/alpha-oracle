@@ -10,7 +10,7 @@ An automated stock trading system for retail investors managing US equities thro
 - **ML Pipeline** — XGBoost with walk-forward validation, Optuna hyperparameter tuning, isotonic/Platt confidence calibration
 - **Strategy Engine** — Backtrader + VectorBT backtesting, walk-forward validation, composite ranking; `MLSignalStrategy` (min 3-day hold)
 - **Built-in Strategies** — SwingMomentum (MA crossover), MeanReversion (Bollinger+RSI), ValueFactor (PE/PB/EV ranking)
-- **Execution Engine** — Half-Kelly position sizing, Smart Order Router (market/limit/TWAP), execution quality tracking (slippage, latency)
+- **Execution Engine** — Half-Kelly position sizing, Smart Order Router (market/limit/TWAP), execution quality tracking (slippage, latency); three broker backends: `IBKRBrokerAdapter` (live/paper), `SimulatedBroker` (in-memory fills, no IB Gateway needed), `PaperStubBroker` (demo data)
 - **Model Monitoring** — PSI feature drift detection, rolling accuracy tracking, degraded-window fallback, Prometheus gauges
 - **Scheduler** — APScheduler cron jobs for daily bars, weekly fundamentals, biweekly alternative data, weekly model retrain
 - **Risk Management** — 4-layer defense: position limits, portfolio limits, circuit breakers, autonomy modes
@@ -173,7 +173,7 @@ stock-analysis/
 │   ├── api/                    # FastAPI REST + WebSocket endpoints
 │   └── monitoring/             # Prometheus metrics, alert manager
 ├── web/                        # React + TypeScript + TailwindCSS dashboard
-├── tests/unit/                 # 564 unit tests
+├── tests/unit/                 # 669 unit tests
 ├── docs/
 │   ├── adrs/                   # Architecture Decision Records (001-010)
 │   ├── feature-specs.md        # Feature specifications (F-001 to F-008)
