@@ -1,4 +1,5 @@
 __all__ = [
+    "InsiderFollowing",
     "MeanReversion",
     "SwingMomentum",
     "ValueFactor",
@@ -6,6 +7,9 @@ __all__ = [
 
 
 def __getattr__(name: str):
+    if name == "InsiderFollowing":
+        from src.strategy.builtin.insider_following import InsiderFollowing
+        return InsiderFollowing
     if name == "MeanReversion":
         from src.strategy.builtin.mean_reversion import MeanReversion
         return MeanReversion

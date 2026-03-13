@@ -164,4 +164,54 @@ export const STRATEGY_DESCRIPTIONS: Record<string, StrategyDescription> = {
       },
     ],
   },
+
+  insider_following: {
+    id: 'insider_following',
+    displayName: 'Insider Following',
+    tagline: 'Follow conviction buying by corporate insiders filing with the SEC.',
+    sections: [
+      {
+        title: 'Core Idea',
+        body:
+          'Corporate insiders — executives, directors, and large shareholders — are required by law (SEC Rule 16a-3) to disclose open-market purchases of their own company\'s stock within two business days via Form 4 filings. When multiple insiders buy simultaneously, they often have non-public conviction about upcoming catalysts or mispricing. This strategy systematically detects these clusters and rides the subsequent move.',
+      },
+      {
+        title: 'Entry Signal',
+        body:
+          'A LONG signal fires when, within a 90-day lookback window ending on the bar date, at least 2 distinct insiders have filed open-market purchase transactions (transaction type "P") totalling at least 5,000 shares. The signal strength scales logarithmically with the total shares purchased above the threshold: exactly 5,000 shares → ~0.0, 50,000 shares → ~1.0. Grants, option exercises, and indirect (family/trust) transactions are excluded — only open-market cash purchases count.',
+      },
+      {
+        title: 'Exit Signal',
+        body:
+          'After the mandatory 10-day minimum hold, the position closes on the first of three conditions: (1) the hold period reaches 21 calendar days — the targeted profit window; (2) the insider sentiment reverses — insiders become net sellers in the same 90-day window; or (3) the price drops 10% below entry (stop-loss). Unlike the price-based strategies, exit timing is primarily driven by insider behaviour changes, not technical indicators.',
+      },
+      {
+        title: 'Data Source',
+        body:
+          'Transaction data flows from SEC EDGAR via the EdgarAdapter and is parsed by Form4Parser into InsiderTransaction records. The filed_date on each record represents when the Form 4 was accepted by the SEC — not the transaction date — ensuring strict point-in-time correctness with no look-ahead bias.',
+      },
+    ],
+    parameters: [
+      { label: 'Lookback', value: '90 days', note: 'Rolling window for cluster detection' },
+      { label: 'Min Insiders', value: '2 distinct', note: 'Single-insider buys excluded' },
+      { label: 'Min Shares', value: '5,000', note: 'Open-market cash purchases only' },
+      { label: 'Hold Period', value: '21 days', note: 'Target exit window' },
+      { label: 'Stop Loss', value: '10%', note: 'Wider stop for position-trade horizon' },
+      { label: 'Min Hold', value: '10 days', note: 'PDT rule compliance' },
+    ],
+    bestFor:
+      'Small and mid-cap stocks where insider ownership is meaningful and Form 4 filings are closely followed. Works best when insiders are buying into weakness rather than in an already-rising stock.',
+    risks:
+      'Insider purchases are sometimes routine (e.g., 10b5-1 plans set up months in advance) and can be misleading. Thin float stocks can be illiquid. The strategy is inherently low-frequency — clusters may take months to form — and performs poorly in markets where insider signals are drowned out by macro factors.',
+    references: [
+      {
+        label: 'Seyhun (1986) — Insiders\' Profits, Costs of Trading, and Market Efficiency',
+        url: 'https://doi.org/10.1016/0304-405X(86)90060-7',
+      },
+      {
+        label: 'Lakonishok & Lee (2001) — Are Insider Trades Informative?',
+        url: 'https://doi.org/10.1093/rfs/14.1.79',
+      },
+    ],
+  },
 };

@@ -7,10 +7,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.core.models import OHLCV, FundamentalData, Signal, SignalDirection
+from src.core.models import OHLCV, FundamentalData, InsiderTransaction, Signal, SignalDirection
 from src.strategy.builtin.swing_momentum import SwingMomentum
 from src.strategy.builtin.mean_reversion import MeanReversion
 from src.strategy.builtin.value_factor import ValueFactor
+from src.strategy.builtin.insider_following import InsiderFollowing
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +267,160 @@ class TestValueFactor:
 
 
 # ---------------------------------------------------------------------------
+# InsiderFollowing Tests
+# ---------------------------------------------------------------------------
+
+def make_flat_bars(symbol: str = "AAPL", days: int = 60, base_price: float = 100.0) -> list[OHLCV]:
+    """Create flat bars for InsiderFollowing tests (price action is irrelevant for entry)."""
+    bars = []
+    base = datetime(2024, 1, 2)
+    for i in range(days):
+        bars.append(OHLCV(
+            symbol=symbol, timestamp=base + timedelta(days=i),
+            open=base_price, high=base_price + 1.0,
+            low=base_price - 1.0, close=base_price,
+            volume=1_000_000, source="test",
+        ))
+    return bars
+
+
+def make_purchases(
+    symbol: str,
+    count: int,
+    shares_each: float,
+    filed_date: datetime,
+) -> list[InsiderTransaction]:
+    """Create *count* distinct insider purchase transactions filed on the same date."""
+    return [
+        InsiderTransaction(
+            symbol=symbol,
+            filed_date=filed_date,
+            insider_name=f"Insider_{i}",
+            insider_title="Director",
+            transaction_type="P",
+            shares=shares_each,
+            price_per_share=100.0,
+            is_direct=True,
+        )
+        for i in range(count)
+    ]
+
+
+class TestInsiderFollowing:
+    def test_properties(self):
+        strategy = InsiderFollowing()
+        assert strategy.name == "insider_following"
+        assert strategy.min_hold_days >= 10
+        assert "ohlcv" in strategy.get_required_data()
+        assert "insider_transactions" in strategy.get_required_data()
+
+    def test_parameters(self):
+        strategy = InsiderFollowing(lookback_days=60, min_net_shares=10_000, min_buy_count=3)
+        params = strategy.get_parameters()
+        assert params["lookback_days"] == 60
+        assert params["min_net_shares"] == 10_000
+        assert params["min_buy_count"] == 3
+        assert "hold_days" in params
+        assert "stop_loss_pct" in params
+
+    def test_no_transactions_returns_empty(self):
+        strategy = InsiderFollowing()
+        bars = make_flat_bars(days=60)
+        signals = strategy.generate_signals({"AAPL": bars})
+        assert signals == []
+
+    def test_generates_long_on_cluster_buy(self):
+        """Two insiders buying enough shares should produce a LONG signal."""
+        strategy = InsiderFollowing(min_buy_count=2, min_net_shares=5_000)
+        bars = make_flat_bars(days=60)
+        # Transactions filed before the first bar
+        txns = make_purchases("AAPL", count=2, shares_each=3_000, filed_date=datetime(2024, 1, 1))
+        strategy.set_insider_transactions({"AAPL": txns})
+        signals = strategy.generate_signals({"AAPL": bars})
+        long_signals = [s for s in signals if s.direction == SignalDirection.LONG]
+        assert len(long_signals) >= 1
+        assert all(0.0 < s.strength <= 1.0 for s in long_signals)
+        assert all(s.strategy_name == "insider_following" for s in long_signals)
+
+    def test_ignores_sales_only(self):
+        """Pure insider selling should not trigger a LONG signal."""
+        strategy = InsiderFollowing(min_buy_count=1, min_net_shares=1_000)
+        bars = make_flat_bars(days=30)
+        sales = [
+            InsiderTransaction(
+                symbol="AAPL",
+                filed_date=datetime(2024, 1, 1),
+                insider_name="CEO",
+                transaction_type="S",
+                shares=50_000,
+            )
+        ]
+        strategy.set_insider_transactions({"AAPL": sales})
+        signals = strategy.generate_signals({"AAPL": bars})
+        long_signals = [s for s in signals if s.direction == SignalDirection.LONG]
+        assert long_signals == []
+
+    def test_respects_min_buy_count(self):
+        """Only 1 insider buying when min_buy_count=2 should not trigger."""
+        strategy = InsiderFollowing(min_buy_count=2, min_net_shares=1_000)
+        bars = make_flat_bars(days=30)
+        txns = make_purchases("AAPL", count=1, shares_each=10_000, filed_date=datetime(2024, 1, 1))
+        strategy.set_insider_transactions({"AAPL": txns})
+        signals = strategy.generate_signals({"AAPL": bars})
+        long_signals = [s for s in signals if s.direction == SignalDirection.LONG]
+        assert long_signals == []
+
+    def test_respects_min_net_shares(self):
+        """Enough insiders but too few total shares should not trigger."""
+        strategy = InsiderFollowing(min_buy_count=2, min_net_shares=10_000)
+        bars = make_flat_bars(days=30)
+        # 2 insiders but only 200 shares each = 400 total, below threshold
+        txns = make_purchases("AAPL", count=2, shares_each=200, filed_date=datetime(2024, 1, 1))
+        strategy.set_insider_transactions({"AAPL": txns})
+        signals = strategy.generate_signals({"AAPL": bars})
+        long_signals = [s for s in signals if s.direction == SignalDirection.LONG]
+        assert long_signals == []
+
+    def test_exit_after_hold_days(self):
+        """A FLAT signal should appear once hold_days is reached."""
+        strategy = InsiderFollowing(min_buy_count=2, min_net_shares=5_000, hold_days=15)
+        bars = make_flat_bars(days=60)
+        txns = make_purchases("AAPL", count=2, shares_each=3_000, filed_date=datetime(2024, 1, 1))
+        strategy.set_insider_transactions({"AAPL": txns})
+        signals = strategy.generate_signals({"AAPL": bars})
+        flat_signals = [s for s in signals if s.direction == SignalDirection.FLAT]
+        assert len(flat_signals) >= 1
+        exit_meta = flat_signals[0].metadata
+        assert exit_meta.get("reason") in ("hold_complete", "insider_selling", "stop_loss")
+
+    def test_insufficient_data_skipped(self):
+        """Fewer bars than min_hold_days should return empty (not crash)."""
+        strategy = InsiderFollowing()
+        short_bars = make_flat_bars(days=5)
+        txns = make_purchases("AAPL", count=3, shares_each=10_000, filed_date=datetime(2024, 1, 1))
+        strategy.set_insider_transactions({"AAPL": txns})
+        signals = strategy.generate_signals({"AAPL": short_bars})
+        assert signals == []
+
+    def test_signal_strength_scales_with_shares(self):
+        """Larger total purchase amounts should yield higher signal strength."""
+        strategy = InsiderFollowing(min_buy_count=2, min_net_shares=5_000)
+        bars = make_flat_bars(days=30)
+
+        small_txns = make_purchases("AAPL", count=2, shares_each=3_000, filed_date=datetime(2024, 1, 1))
+        large_txns = make_purchases("MSFT", count=2, shares_each=30_000, filed_date=datetime(2024, 1, 1))
+        strategy.set_insider_transactions({"AAPL": small_txns, "MSFT": large_txns})
+
+        signals = strategy.generate_signals({
+            "AAPL": make_flat_bars("AAPL", days=30),
+            "MSFT": make_flat_bars("MSFT", days=30),
+        })
+        aapl_strength = next(s.strength for s in signals if s.symbol == "AAPL" and s.direction == SignalDirection.LONG)
+        msft_strength = next(s.strength for s in signals if s.symbol == "MSFT" and s.direction == SignalDirection.LONG)
+        assert msft_strength > aapl_strength
+
+
+# ---------------------------------------------------------------------------
 # Cross-cutting: all strategies enforce min_hold_days >= 2
 # ---------------------------------------------------------------------------
 
@@ -280,3 +435,6 @@ class TestPDTCompliance:
 
     def test_value_factor_min_hold(self):
         assert ValueFactor().min_hold_days >= 2
+
+    def test_insider_following_min_hold(self):
+        assert InsiderFollowing().min_hold_days >= 2

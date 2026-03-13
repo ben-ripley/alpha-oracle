@@ -5,13 +5,17 @@ import {
   ShieldAlert,
   ArrowLeftRight,
   Activity,
+  BarChart2,
+  BrainCircuit,
 } from 'lucide-react';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Portfolio' },
   { to: '/strategies', icon: FlaskConical, label: 'Strategies' },
+  { to: '/backtest', icon: BarChart2, label: 'Backtest' },
   { to: '/risk', icon: ShieldAlert, label: 'Risk' },
   { to: '/trades', icon: ArrowLeftRight, label: 'Trades' },
+  { to: '/model-health', icon: BrainCircuit, label: 'Model Health' },
 ];
 
 export function Sidebar() {

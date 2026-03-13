@@ -4,6 +4,8 @@ import { Portfolio } from './pages/Portfolio';
 import { Strategies } from './pages/Strategies';
 import { Risk } from './pages/Risk';
 import { Trades } from './pages/Trades';
+import { Backtest } from './pages/Backtest';
+import { ModelHealth } from './pages/ModelHealth';
 
 export default function App() {
   return (
@@ -14,6 +16,8 @@ export default function App() {
           <Route path="/strategies" element={<Strategies />} />
           <Route path="/risk" element={<Risk />} />
           <Route path="/trades" element={<Trades />} />
+          <Route path="/backtest" element={<Backtest />} />
+          <Route path="/model-health" element={<ModelHealth />} />
         </Route>
       </Routes>
     </BrowserRouter>
