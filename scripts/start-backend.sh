@@ -47,7 +47,7 @@ fi
 
 echo "Starting FastAPI (uvicorn)..."
 cd "$PROJECT_ROOT"
-nohup python -m uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000 > "$LOG_FILE" 2>&1 &
+nohup "$PROJECT_ROOT/.venv/bin/python" -m uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000 > "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
 echo "Backend API started (PID $(cat "$PID_FILE")) — http://localhost:8000"
 echo "Logs: $LOG_FILE"
