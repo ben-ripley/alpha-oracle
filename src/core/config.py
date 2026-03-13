@@ -129,6 +129,18 @@ class MLSettings(BaseSettings):
     })
 
 
+class AgentSettings(BaseSettings):
+    provider: str = "anthropic"          # "anthropic" | "bedrock"
+    model: str = "claude-sonnet-4-20250514"
+    aws_region: str = "us-east-1"
+    temperature: float = 0.0
+    max_input_tokens: int = 50_000
+    max_output_tokens: int = 4_096
+    daily_budget_usd: float = 5.0
+    monthly_budget_usd: float = 100.0
+    enabled: bool = True
+
+
 class SchedulerSettings(BaseSettings):
     enabled: bool = True
     daily_bars_cron: str = "0 17 * * 1-5"  # 5pm ET weekdays
@@ -209,7 +221,9 @@ class Settings(BaseSettings):
 
     # API keys from env
     alpha_vantage_api_key: str = ""
-    anthropic_api_key: str = ""
+    anthropic_api_key: str = ""          # used when agent.provider = "anthropic"
+    aws_access_key_id: str = ""          # used when agent.provider = "bedrock"
+    aws_secret_access_key: str = ""      # used when agent.provider = "bedrock"
 
     # Sub-configs loaded from YAML + env overrides
     broker: BrokerSettings = Field(default_factory=BrokerSettings)
@@ -223,6 +237,7 @@ class Settings(BaseSettings):
     ml: MLSettings = Field(default_factory=MLSettings)
     scheduler: SchedulerSettings = Field(default_factory=SchedulerSettings)
     router: RouterSettings = Field(default_factory=RouterSettings)
+    agent: AgentSettings = Field(default_factory=AgentSettings)
 
     @classmethod
     def from_yaml(cls) -> Settings:
@@ -236,7 +251,7 @@ class Settings(BaseSettings):
             flat["environment"] = settings_data["app"].get("environment", "development")
             flat["log_level"] = settings_data["app"].get("log_level", "INFO")
 
-        for key in ["broker", "data", "database", "redis", "strategy", "execution", "monitoring", "ml", "scheduler", "router"]:
+        for key in ["broker", "data", "database", "redis", "strategy", "execution", "monitoring", "ml", "scheduler", "router", "agent"]:
             if key in settings_data:
                 flat[key] = settings_data[key]
 

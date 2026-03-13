@@ -278,7 +278,18 @@ export SA_ML__CONFIDENCE_THRESHOLD=0.60
 
 # API keys
 export SA_ALPHA_VANTAGE_API_KEY=your_key
-export SA_ANTHROPIC_API_KEY=your_key
+
+# LLM provider — choose one:
+# Option A: Direct Anthropic API
+export ANTHROPIC_API_KEY=your_key
+
+# Option B: AWS Bedrock
+export SA_AGENT__PROVIDER=bedrock
+export SA_AGENT__AWS_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=your_access_key
+export AWS_SECRET_ACCESS_KEY=your_secret_key
+# Bedrock requires a cross-region inference model ID, e.g.:
+# export SA_AGENT__MODEL=us.anthropic.claude-sonnet-4-5-20251001-v1:0
 ```
 
 Environment variables take precedence over `settings.yaml`.
