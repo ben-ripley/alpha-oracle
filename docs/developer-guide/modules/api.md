@@ -1,6 +1,6 @@
 # API Layer Module
 
-The `src/api/` module implements the FastAPI REST API and WebSocket endpoint for the stock-analysis system. Provides routes for portfolio, strategies, risk, trades, and system management, plus real-time WebSocket broadcasting via [Redis](../glossary.md#redis) pub/sub.
+The `src/api/` module implements the FastAPI REST API and WebSocket endpoint for the alpha-oracle system. Provides routes for portfolio, strategies, risk, trades, and system management, plus real-time WebSocket broadcasting via [Redis](../glossary.md#redis) pub/sub.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ FastAPI application factory with lifespan management.
 ```python
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting stock-analysis API")
+    logger.info("Starting alpha-oracle API")
 
     # 1. Start market data feed (IBKR or fallback)
     if settings.broker.provider == "ibkr":

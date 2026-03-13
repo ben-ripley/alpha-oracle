@@ -23,7 +23,7 @@ docker compose ps
 ./scripts/start-backend.sh
 
 # Option 2: Manual uvicorn
-cd /path/to/stock-analysis
+cd /path/to/alpha-oracle
 uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -349,8 +349,8 @@ Logs are written to `logs/` directory:
 # Install logrotate
 sudo apt install logrotate
 
-# Configure in /etc/logrotate.d/stock-analysis
-/path/to/stock-analysis/logs/*.log {
+# Configure in /etc/logrotate.d/alpha-oracle
+/path/to/alpha-oracle/logs/*.log {
     daily
     rotate 30
     compress

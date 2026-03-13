@@ -4,7 +4,7 @@ The system provides multiple layers of monitoring to keep you informed about tra
 
 ## Monitoring Dashboards
 
-### 1. Stock Analysis Dashboard (Port 3000)
+### 1. AlphaOracle Dashboard (Port 3000)
 
 The main React dashboard at `http://localhost:3000`.
 

@@ -1,6 +1,6 @@
 # Core Module
 
-The `src/core/` module provides the foundational building blocks for the stock-analysis system: domain models, interfaces, configuration, database, and [Redis](../glossary.md#redis) client management.
+The `src/core/` module provides the foundational building blocks for the alpha-oracle system: domain models, interfaces, configuration, database, and [Redis](../glossary.md#redis) client management.
 
 ## Purpose
 

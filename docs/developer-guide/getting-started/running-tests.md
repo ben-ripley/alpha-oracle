@@ -1,6 +1,6 @@
 # Running Tests
 
-The **stock-analysis** project uses **pytest** for testing, with 669 unit tests covering all major subsystems. This page documents how to run the test suite, test organization, and key testing patterns.
+The **alpha-oracle** project uses **pytest** for testing, with 669 unit tests covering all major subsystems. This page documents how to run the test suite, test organization, and key testing patterns.
 
 ## Running All Tests
 

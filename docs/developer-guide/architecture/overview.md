@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This page provides a high-level overview of the **stock-analysis** system architecture, core design patterns, and key interfaces.
+This page provides a high-level overview of the **alpha-oracle** system architecture, core design patterns, and key interfaces.
 
 ## Architectural Style: Modular Monolith
 

@@ -233,7 +233,7 @@ async with limiter:
 |---------|---------|---------|
 | `SA_ALPHA_VANTAGE_API_KEY` | (required) | Alpha Vantage API key |
 | `SA_DATA__ALPHA_VANTAGE__RATE_LIMIT_PER_MINUTE` | 5 | Free tier limit |
-| `SA_DATA__EDGAR__USER_AGENT` | "stock-analysis bot@example.com" | SEC EDGAR user-agent |
+| `SA_DATA__EDGAR__USER_AGENT` | "alpha-oracle bot@example.com" | SEC EDGAR user-agent |
 | `SA_DATA__EDGAR__RATE_LIMIT_PER_SECOND` | 10 | SEC allows 10 req/sec |
 | `SA_DATA__FINRA__RATE_LIMIT_PER_MINUTE` | 10 | FINRA short interest API |
 | `SA_DATA__UNIVERSE__CACHE_TTL_SECONDS` | 86400 (24h) | S&P 500 list cache |

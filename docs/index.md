@@ -1,4 +1,4 @@
-# Stock Analysis System
+# AlphaOracle System
 
 An AI-driven automated stock trading system designed for retail investors with accounts under $25,000. Built for swing and position trading strategies, the system combines traditional technical analysis with machine learning signals to identify opportunities in US equities markets.
 

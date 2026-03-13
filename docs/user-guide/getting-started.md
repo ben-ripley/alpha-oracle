@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide will help you get oriented when you first open the Stock Analysis System dashboard.
+This guide will help you get oriented when you first open the AlphaOracle System dashboard.
 
 ## First-Time Orientation
 

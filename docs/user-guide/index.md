@@ -1,6 +1,6 @@
 # User Guide
 
-Welcome to the Stock Analysis System user guide. This guide is designed for investors and users who want to understand how to use the system effectively, monitor their portfolio, and manage risk.
+Welcome to the AlphaOracle System user guide. This guide is designed for investors and users who want to understand how to use the system effectively, monitor their portfolio, and manage risk.
 
 ## What This Guide Covers
 

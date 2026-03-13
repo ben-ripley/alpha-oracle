@@ -178,7 +178,7 @@ async def get_backtest_history(
 ```python
 from src.api.routes import portfolio, strategies, risk, trades, system, websocket, backtest
 
-app = FastAPI(title="Stock Analysis API")
+app = FastAPI(title="AlphaOracle API")
 
 # Register routers
 app.include_router(portfolio.router)

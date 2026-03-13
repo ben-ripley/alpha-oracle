@@ -5,8 +5,8 @@ This guide walks through cloning the repository, installing dependencies, config
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/stock-analysis.git
-cd stock-analysis
+git clone https://github.com/yourusername/alpha-oracle.git
+cd alpha-oracle
 ```
 
 ## 2. Create Python Virtual Environment

@@ -234,7 +234,7 @@ logger.warning("backfill.symbol_error", symbol=symbol, error=str(exc))
 
 ```bash
 # Connect to TimescaleDB
-docker exec -it stock-analysis-timescaledb-1 psql -U trader -d stock_analysis
+docker exec -it alpha-oracle-timescaledb-1 psql -U trader -d stock_analysis
 
 # Count symbols
 SELECT COUNT(DISTINCT symbol) FROM ohlcv;
@@ -251,11 +251,11 @@ SELECT * FROM ohlcv WHERE symbol = 'AAPL' ORDER BY timestamp DESC LIMIT 5;
 
 ```bash
 # Count completed symbols
-docker exec -it stock-analysis-redis-1 redis-cli SCARD backfill:completed
+docker exec -it alpha-oracle-redis-1 redis-cli SCARD backfill:completed
 -- Expected: 503
 
 # Check specific symbol
-docker exec -it stock-analysis-redis-1 redis-cli SISMEMBER backfill:completed AAPL
+docker exec -it alpha-oracle-redis-1 redis-cli SISMEMBER backfill:completed AAPL
 -- Expected: 1 (true)
 ```
 

@@ -1,6 +1,6 @@
 # Developer Guide
 
-Welcome to the **stock-analysis** Developer Guide. This documentation is for developers and contributors who want to understand the system architecture, set up a local development environment, extend functionality, or contribute to the project.
+Welcome to the **alpha-oracle** Developer Guide. This documentation is for developers and contributors who want to understand the system architecture, set up a local development environment, extend functionality, or contribute to the project.
 
 ## What This Guide Covers
 
@@ -17,7 +17,7 @@ This guide provides technical documentation for:
 
 ## Project Overview
 
-**stock-analysis** is an AI-driven automated stock trading system designed for retail investors with accounts under $25K. It focuses on swing and position trading (no day trading) to comply with FINRA Pattern Day Trader (PDT) rules.
+**alpha-oracle** is an AI-driven automated stock trading system designed for retail investors with accounts under $25K. It focuses on swing and position trading (no day trading) to comply with FINRA Pattern Day Trader (PDT) rules.
 
 ### Key Features
 
@@ -118,7 +118,7 @@ See [ADRs](adrs.md) for detailed context on key architectural choices:
 - [User Guide](../user-guide/index.md) — For traders and operators
 - [Glossary](../glossary.md) — Technical terms and acronyms
 - [API Reference](../api-reference.md) — REST and WebSocket endpoints
-- [GitHub Repository](https://github.com/yourusername/stock-analysis)
+- [GitHub Repository](https://github.com/yourusername/alpha-oracle)
 
 ## Contributing
 
@@ -131,6 +131,6 @@ Contributions are welcome! Please read the [Contributing Guide](../CONTRIBUTING.
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/stock-analysis/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/stock-analysis/discussions)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/alpha-oracle/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/alpha-oracle/discussions)
 - **Security**: See [SECURITY.md](../SECURITY.md) for reporting vulnerabilities

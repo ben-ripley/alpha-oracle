@@ -1,6 +1,6 @@
 # Glossary
 
-Financial and trading terms used throughout the Stock Analysis system.
+Financial and trading terms used throughout the AlphaOracle system.
 
 ---
 

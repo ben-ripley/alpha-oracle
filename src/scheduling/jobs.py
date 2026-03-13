@@ -43,10 +43,16 @@ def is_market_hours_request_safe(timeframe: str) -> bool:
     return market_open <= now_et <= market_close
 
 
+_DAILY_BARS_LAST_RUN_KEY = "jobs:daily_bars:last_run"
+_DAILY_BARS_FALLBACK_DAYS = 7
+
+
 async def daily_bars_job() -> None:
     """Fetch daily OHLCV bars for all universe symbols.
 
-    Uses a 7-day lookback window so weekends and market holidays are covered.
+    Uses the timestamp of the last successful run as the start of the fetch
+    window, so any gap caused by downtime is automatically recovered on the
+    next run.  Falls back to a 7-day lookback on first run.
     Idempotent: symbols already processed today (tracked in Redis) are skipped.
     """
     logger.info("job.daily_bars.start")
@@ -61,9 +67,17 @@ async def daily_bars_job() -> None:
 
         today = _now_et().date()
         end_dt = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc)
-        start_dt = end_dt - timedelta(days=7)
 
         redis = await get_redis()
+
+        last_run_str = await redis.get(_DAILY_BARS_LAST_RUN_KEY)
+        if last_run_str:
+            start_dt = datetime.fromisoformat(last_run_str)
+            logger.info("job.daily_bars.resume_from_last_run", last_run=last_run_str)
+        else:
+            start_dt = end_dt - timedelta(days=_DAILY_BARS_FALLBACK_DAYS)
+            logger.info("job.daily_bars.first_run_fallback", days=_DAILY_BARS_FALLBACK_DAYS)
+
         done_key = f"jobs:daily_bars:{today.isoformat()}:done"
 
         av = AlphaVantageAdapter()
@@ -85,6 +99,7 @@ async def daily_bars_job() -> None:
                 logger.warning("job.daily_bars.symbol_error", symbol=symbol, exc_info=True)
                 errors += 1
 
+        await redis.set(_DAILY_BARS_LAST_RUN_KEY, end_dt.isoformat())
         logger.info(
             "job.daily_bars.complete",
             symbols=len(symbols),

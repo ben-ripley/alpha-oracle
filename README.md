@@ -1,4 +1,4 @@
-# Stock Analysis — AI-Driven Automated Trading System
+# AlphaOracle — AI-Driven Automated Trading System
 
 An automated stock trading system for retail investors managing US equities through a personal brokerage account. The system ingests market data, applies rule-based and ML-driven signal generation, backtests and ranks strategies, executes trades, and manages risk with configurable autonomy levels.
 
@@ -155,7 +155,7 @@ Mode transitions require explicit operator action and cannot be changed programm
 ## Project Structure
 
 ```
-stock-analysis/
+alpha-oracle/
 ├── docker-compose.yml          # TimescaleDB, Redis, Prometheus, Grafana
 ├── pyproject.toml              # Python dependencies and tool config
 ├── config/

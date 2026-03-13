@@ -1,6 +1,6 @@
 # Dashboard Overview
 
-The Stock Analysis System dashboard is a web-based interface for monitoring your portfolio, strategies, risk, and trades in real time.
+The AlphaOracle System dashboard is a web-based interface for monitoring your portfolio, strategies, risk, and trades in real time.
 
 ## Design Philosophy
 

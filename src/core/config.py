@@ -37,7 +37,7 @@ class AlphaVantageDataSettings(BaseSettings):
 
 
 class EdgarDataSettings(BaseSettings):
-    user_agent: str = "stock-analysis bot@example.com"
+    user_agent: str = "alpha-oracle bot@example.com"
     rate_limit_per_second: int = 10
 
 

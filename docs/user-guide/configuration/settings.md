@@ -20,7 +20,7 @@ General application settings.
 
 ```yaml
 app:
-  name: stock-analysis
+  name: alpha-oracle
   environment: development  # development | paper | live
   log_level: INFO           # DEBUG | INFO | WARNING | ERROR
 ```
@@ -67,7 +67,7 @@ data:
     cache_ttl_hours: 24            # Cache data for 24 hours
 
   edgar:
-    user_agent: "stock-analysis bot@example.com"
+    user_agent: "alpha-oracle bot@example.com"
     rate_limit_per_second: 10      # SEC Edgar rate limit
 
   feed:

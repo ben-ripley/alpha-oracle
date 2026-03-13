@@ -1,6 +1,6 @@
 # Prerequisites
 
-This page documents the system requirements and tools needed to run **stock-analysis** in a local development environment.
+This page documents the system requirements and tools needed to run **alpha-oracle** in a local development environment.
 
 ## System Requirements
 

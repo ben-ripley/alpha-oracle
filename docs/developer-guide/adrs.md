@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADRs)
 
-Architecture Decision Records document significant technical decisions made during the design and implementation of the stock-analysis system. Each ADR captures the context, decision, and consequences of a choice that shapes the system's architecture.
+Architecture Decision Records document significant technical decisions made during the design and implementation of the alpha-oracle system. Each ADR captures the context, decision, and consequences of a choice that shapes the system's architecture.
 
 ## What are ADRs?
 

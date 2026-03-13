@@ -377,7 +377,7 @@ The `useWebSocket` hook filters out `pong` messages so they don't trigger re-ren
 
 ```bash
 # Connect to Redis container
-docker exec -it stock-analysis-redis-1 redis-cli
+docker exec -it alpha-oracle-redis-1 redis-cli
 
 # Publish test portfolio update
 PUBLISH portfolio:update '{"total_equity": 26000, "cash": 6000, "positions_value": 20000}'

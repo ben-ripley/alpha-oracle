@@ -1,6 +1,6 @@
 # Monitoring Module
 
-The `src/monitoring/` module implements observability for the stock-analysis system via Prometheus metrics (counters, gauges, histograms), AlertManager for Slack/Telegram notifications, and Grafana dashboards. All components emit structured logs via structlog for centralized analysis.
+The `src/monitoring/` module implements observability for the alpha-oracle system via Prometheus metrics (counters, gauges, histograms), AlertManager for Slack/Telegram notifications, and Grafana dashboards. All components emit structured logs via structlog for centralized analysis.
 
 ## Purpose
 
@@ -327,13 +327,13 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'stock-analysis-api'
+  - job_name: 'alpha-oracle-api'
     static_configs:
       - targets: ['host.docker.internal:8000']  # FastAPI main app
         labels:
           service: 'api'
 
-  - job_name: 'stock-analysis-metrics'
+  - job_name: 'alpha-oracle-metrics'
     static_configs:
       - targets: ['host.docker.internal:8001']  # Prometheus metrics endpoint
         labels:

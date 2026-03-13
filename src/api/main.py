@@ -16,7 +16,7 @@ logger = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting stock-analysis API")
+    logger.info("Starting alpha-oracle API")
 
     settings = get_settings()
     provider = settings.broker.provider.lower()
@@ -103,12 +103,12 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.warning("broker.shutdown_disconnect_failed", exc_info=True)
 
-    logger.info("Shutting down stock-analysis API")
+    logger.info("Shutting down alpha-oracle API")
     await close_redis()
 
 
 app = FastAPI(
-    title="Stock Analysis Trading System",
+    title="AlphaOracle Trading System",
     description="AI-driven automated stock trading system API",
     version="0.1.0",
     lifespan=lifespan,
@@ -132,4 +132,4 @@ app.include_router(websocket.router, tags=["websocket"])
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "stock-analysis"}
+    return {"status": "ok", "service": "alpha-oracle"}

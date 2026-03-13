@@ -1,6 +1,6 @@
 # Data Flows
 
-This page documents the three main data flows through the **stock-analysis** system: signal generation, order execution, and risk management.
+This page documents the three main data flows through the **alpha-oracle** system: signal generation, order execution, and risk management.
 
 ## 1. Signal Generation Flow
 

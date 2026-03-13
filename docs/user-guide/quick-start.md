@@ -1,19 +1,27 @@
 # Quick Start Guide
 
-Get the Stock Analysis System running in under 5 minutes.
+Get the AlphaOracle System running in under 5 minutes.
 
 ## Prerequisites
 
 - Python 3.11+
 - Node.js 18+
 - Docker and Docker Compose
-- An Alpha Vantage API key (free tier: [alphavantage.co](https://www.alphavantage.co/support/#api-key))
+- An [Alpha Vantage API](https://www.alphavantage.co/support/#api-key) key
+- An [Interactive Brokers (IBKR)](https://www.interactivebrokers.com/en/trading/ibkr-api.php) accountfor live/paper trading and real-time market data
+  - An IB Gateway or TWS installed and running locally                  
+  - No API key — it connects via a local socket (host/port in config/settings.yaml)
+- Update the user agent in config/settings.yaml with your real email (SEC requires it)
+  ```
+  edgar:
+    user_agent: "Your Name" your@email.com"
+  ```
 
 ## Step 1: Clone and Install
 
 ```bash
-git clone <repository-url> stock-analysis
-cd stock-analysis
+git clone <repository-url> alpha-oracle
+cd alpha-oracle
 
 # Python dependencies
 python -m venv .venv

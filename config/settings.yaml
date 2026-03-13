@@ -1,5 +1,5 @@
 app:
-  name: stock-analysis
+  name: alpha-oracle
   environment: development  # development | paper | live
   log_level: INFO
 
@@ -17,7 +17,7 @@ data:
     rate_limit_per_minute: 5
     cache_ttl_hours: 24
   edgar:
-    user_agent: "stock-analysis bot@example.com"
+    user_agent: "alpha-oracle bot@example.com"
     rate_limit_per_second: 10
   feed:
     feed_type: iex          # iex (free, delayed) | sip (paid, real-time)

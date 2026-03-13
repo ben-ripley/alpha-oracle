@@ -146,40 +146,43 @@ async def _run(args: argparse.Namespace) -> None:
     fetched = errors = 0
     run_start = time.monotonic()
 
-    for i, symbol in enumerate(remaining, start=1):
-        done_count = already_done + i - 1
-        pct = (done_count / total) * 100
+    try:
+        for i, symbol in enumerate(remaining, start=1):
+            done_count = already_done + i - 1
+            pct = (done_count / total) * 100
 
-        # Recalculate ETA from actual elapsed rate
-        elapsed = time.monotonic() - run_start
-        if i > 1:
-            rate_actual = (i - 1) / elapsed  # symbols/sec
-            secs_left = (to_fetch - i + 1) / rate_actual if rate_actual > 0 else 0
-            eta_str = _fmt_duration(secs_left)
-        else:
-            eta_str = _fmt_duration(eta_seconds)
+            # Recalculate ETA from actual elapsed rate
+            elapsed = time.monotonic() - run_start
+            if i > 1:
+                rate_actual = (i - 1) / elapsed  # symbols/sec
+                secs_left = (to_fetch - i + 1) / rate_actual if rate_actual > 0 else 0
+                eta_str = _fmt_duration(secs_left)
+            else:
+                eta_str = _fmt_duration(eta_seconds)
 
-        print(
-            f"  [{symbol:<6}] {done_count + 1:>4}/{total} ({pct:5.1f}%)  ETA: {eta_str}",
-            end="\r",
-            flush=True,
-        )
+            print(
+                f"  [{symbol:<6}] {done_count + 1:>4}/{total} ({pct:5.1f}%)  ETA: {eta_str}",
+                end="\r",
+                flush=True,
+            )
 
-        try:
-            bars = await av.get_historical_bars(symbol, start_dt, end_dt)
-            if bars:
-                await storage.store_ohlcv(bars)
-            await redis.sadd(_REDIS_PROGRESS_KEY, symbol)
-            fetched += 1
-        except KeyboardInterrupt:
-            print(f"\n\n  Interrupted after {fetched} symbols. Progress saved.")
-            print(f"  Run with --resume (or just re-run) to continue.")
-            return
-        except Exception as exc:
-            errors += 1
-            # Print on new line so progress bar isn't overwritten
-            print(f"\n  [WARN] {symbol}: {exc}")
-            logger.warning("backfill.symbol_error", symbol=symbol, error=str(exc))
+            try:
+                bars = await av.get_historical_bars(symbol, start_dt, end_dt)
+                if bars:
+                    await storage.store_ohlcv(bars)
+                await redis.sadd(_REDIS_PROGRESS_KEY, symbol)
+                fetched += 1
+            except KeyboardInterrupt:
+                print(f"\n\n  Interrupted after {fetched} symbols. Progress saved.")
+                print(f"  Run with --resume (or just re-run) to continue.")
+                return
+            except Exception as exc:
+                errors += 1
+                # Print on new line so progress bar isn't overwritten
+                print(f"\n  [WARN] {symbol}: {exc}")
+                logger.warning("backfill.symbol_error", symbol=symbol, error=str(exc))
+    finally:
+        await av.close()
 
     elapsed_total = time.monotonic() - run_start
     print(f"\n\n{'=' * 60}")

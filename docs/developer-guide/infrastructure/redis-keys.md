@@ -229,24 +229,24 @@ Example:
 
 ### View all keys
 ```bash
-docker exec -it stock-analysis-redis-1 redis-cli KEYS "*"
+docker exec -it alpha-oracle-redis-1 redis-cli KEYS "*"
 ```
 
 ### Inspect a key
 ```bash
 # String key
-docker exec -it stock-analysis-redis-1 redis-cli GET "risk:kill_switch"
+docker exec -it alpha-oracle-redis-1 redis-cli GET "risk:kill_switch"
 
 # Set members
-docker exec -it stock-analysis-redis-1 redis-cli SMEMBERS "jobs:daily_bars:2026-03-12:done"
+docker exec -it alpha-oracle-redis-1 redis-cli SMEMBERS "jobs:daily_bars:2026-03-12:done"
 
 # Sorted set (PDT trades)
-docker exec -it stock-analysis-redis-1 redis-cli ZRANGE "risk:pdt:trades" 0 -1 WITHSCORES
+docker exec -it alpha-oracle-redis-1 redis-cli ZRANGE "risk:pdt:trades" 0 -1 WITHSCORES
 ```
 
 ### Clear all keys (development only)
 ```bash
-docker exec -it stock-analysis-redis-1 redis-cli FLUSHALL
+docker exec -it alpha-oracle-redis-1 redis-cli FLUSHALL
 ```
 
 ### Clear demo data (prepare for real trading)

@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common issues and solutions for the stock-analysis system.
+Common issues and solutions for the alpha-oracle system.
 
 ## Backend / API Issues
 
@@ -105,7 +105,7 @@ docker compose logs timescaledb
 
 **Diagnosis:**
 ```bash
-docker exec -it stock-analysis-timescaledb-1 psql -U trader -d stock_analysis
+docker exec -it alpha-oracle-timescaledb-1 psql -U trader -d stock_analysis
 
 -- Check row count
 SELECT COUNT(*) FROM ohlcv;
@@ -156,7 +156,7 @@ docker compose logs redis
 **Solutions:**
 1. Redis not running → `docker compose up -d redis`
 2. Port conflict → Check if another Redis instance is using 6379
-3. Max clients reached → `docker restart stock-analysis-redis-1`
+3. Max clients reached → `docker restart alpha-oracle-redis-1`
 
 ---
 
@@ -186,7 +186,7 @@ docker compose restart redis
 
 **Diagnosis:**
 ```bash
-docker exec -it stock-analysis-redis-1 redis-cli ZRANGE risk:pdt:trades 0 -1 WITHSCORES
+docker exec -it alpha-oracle-redis-1 redis-cli ZRANGE risk:pdt:trades 0 -1 WITHSCORES
 ```
 
 **Causes:**
@@ -196,7 +196,7 @@ docker exec -it stock-analysis-redis-1 redis-cli ZRANGE risk:pdt:trades 0 -1 WIT
 **Prevention:**
 - Never run `FLUSHALL` in production
 - Always use `docker compose down` (not `docker compose down -v`)
-- Backup Redis data: `docker exec stock-analysis-redis-1 redis-cli SAVE`
+- Backup Redis data: `docker exec alpha-oracle-redis-1 redis-cli SAVE`
 
 ---
 
@@ -329,7 +329,7 @@ AttributeError: <module 'src.data.storage'> has no attribute 'TimeSeriesStorage'
 **Diagnosis:**
 ```bash
 # Check day trade count
-docker exec -it stock-analysis-redis-1 redis-cli ZCARD risk:pdt:trades
+docker exec -it alpha-oracle-redis-1 redis-cli ZCARD risk:pdt:trades
 ```
 
 **Causes:**
@@ -355,10 +355,10 @@ docker exec -it stock-analysis-redis-1 redis-cli ZCARD risk:pdt:trades
 **Diagnosis:**
 ```bash
 # Check Redis key
-docker exec -it stock-analysis-redis-1 redis-cli GET risk:kill_switch
+docker exec -it alpha-oracle-redis-1 redis-cli GET risk:kill_switch
 
 # Check database
-docker exec -it stock-analysis-timescaledb-1 psql -U trader -d stock_analysis
+docker exec -it alpha-oracle-timescaledb-1 psql -U trader -d stock_analysis
 SELECT * FROM kill_switch;
 ```
 
@@ -366,7 +366,7 @@ SELECT * FROM kill_switch;
 1. Use dashboard kill switch modal with "RESUME" confirmation
 2. Manual override (development only):
    ```bash
-   docker exec -it stock-analysis-redis-1 redis-cli SET risk:kill_switch inactive
+   docker exec -it alpha-oracle-redis-1 redis-cli SET risk:kill_switch inactive
    ```
 3. Database update (development only):
    ```sql
@@ -394,7 +394,7 @@ SELECT * FROM kill_switch;
 curl http://localhost:8000/api/system/health
 
 # Check latest bars
-docker exec -it stock-analysis-timescaledb-1 psql -U trader -d stock_analysis
+docker exec -it alpha-oracle-timescaledb-1 psql -U trader -d stock_analysis
 SELECT symbol, MAX(timestamp) FROM ohlcv GROUP BY symbol ORDER BY MAX(timestamp) DESC LIMIT 10;
 
 # Check scheduler logs
@@ -505,7 +505,7 @@ grep "WebSocket" logs/backend.log
 **Diagnosis:**
 ```bash
 # Check database query time
-docker exec -it stock-analysis-timescaledb-1 psql -U trader -d stock_analysis
+docker exec -it alpha-oracle-timescaledb-1 psql -U trader -d stock_analysis
 \timing on
 SELECT * FROM ohlcv WHERE symbol = 'AAPL' AND timestamp > NOW() - INTERVAL '1 year';
 

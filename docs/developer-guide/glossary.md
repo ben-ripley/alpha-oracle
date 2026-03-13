@@ -1,6 +1,6 @@
 # Developer Glossary
 
-Technical infrastructure and financial/ML terms for developers working on the Stock Analysis system.
+Technical infrastructure and financial/ML terms for developers working on the AlphaOracle system.
 
 ---
 

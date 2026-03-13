@@ -1,6 +1,6 @@
 apiVersion: 1
 providers:
-  - name: "Stock Analysis"
+  - name: "AlphaOracle"
     orgId: 1
     type: file
     disableDeletion: false
