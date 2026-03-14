@@ -9,6 +9,7 @@ import pandas as pd
 import structlog
 from dateutil.relativedelta import relativedelta
 
+from src.core.config import get_settings
 from src.core.interfaces import BacktestEngine, BaseStrategy
 from src.core.models import OHLCV, BacktestResult, Signal, SignalDirection
 
@@ -21,6 +22,8 @@ class SignalStrategy(bt.Strategy):
     params = (
         ("signals", []),
         ("min_hold_days", 2),
+        ("initial_capital", 20000.0),
+        ("max_positions", 10),
     )
 
     def __init__(self) -> None:
@@ -39,7 +42,14 @@ class SignalStrategy(bt.Strategy):
             pos = self.getposition(data)
 
             if sig and sig.direction == SignalDirection.LONG and not pos.size:
-                size = int(self.broker.getcash() * 0.95 / data.close[0])
+                open_positions = len(self._entry_bars)
+                if open_positions >= self.params.max_positions:
+                    continue
+                # Fixed to initial_capital (not current cash) to prevent
+                # allocation drift — each position gets an equal slice of
+                # starting capital regardless of when it opens.
+                position_value = self.params.initial_capital / self.params.max_positions
+                size = int(position_value / data.close[0])
                 if size > 0:
                     self.buy(data=data, size=size)
                     self._entry_bars[symbol] = len(self)
@@ -71,9 +81,15 @@ def _ohlcv_to_feed(bars: list[OHLCV], symbol: str) -> bt.feeds.PandasData:
 class BacktraderEngine(BacktestEngine):
     """Backtesting engine using the Backtrader framework."""
 
-    def __init__(self, commission: float = 0.0, slippage_pct: float = 0.01) -> None:
+    def __init__(
+        self,
+        commission: float = 0.0,
+        slippage_pct: float = 0.01,
+        max_positions: int | None = None,
+    ) -> None:
         self._commission = commission
         self._slippage_pct = slippage_pct
+        self._max_positions = max_positions
 
     def run(
         self,
@@ -162,7 +178,18 @@ class BacktraderEngine(BacktestEngine):
             feed = _ohlcv_to_feed(bars, symbol)
             cerebro.adddata(feed, name=symbol)
 
-        cerebro.addstrategy(SignalStrategy, signals=signals, min_hold_days=strategy.min_hold_days)
+        max_positions = (
+            self._max_positions
+            if self._max_positions is not None
+            else get_settings().risk.portfolio_limits.max_positions
+        )
+        cerebro.addstrategy(
+            SignalStrategy,
+            signals=signals,
+            min_hold_days=strategy.min_hold_days,
+            initial_capital=initial_capital,
+            max_positions=max_positions,
+        )
 
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe", riskfreerate=0.0, annualize=True)
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")

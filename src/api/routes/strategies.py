@@ -1,14 +1,85 @@
 from __future__ import annotations
 
+import asyncio
 import json
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Query
+import structlog
+import redis as redis_sync
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from src.api.dependencies import get_strategy_engine
+from src.api.dependencies import get_strategy_engine, get_storage
+from src.core.config import get_settings
 from src.core.models import BacktestResult, StrategyRanking
+from src.core.redis import get_redis
+from src.strategy.backtest.backtrader_engine import BacktraderEngine
 
 router = APIRouter()
+logger = structlog.get_logger()
+
+_BACKTEST_EXECUTOR = ThreadPoolExecutor(max_workers=2)
+_TIMING_KEY = "backtest:timing:ms_per_symbol"
+_TIMING_FALLBACK_MS = 50.0
+
+
+def _run_backtest_thread(
+    job_key: str,
+    strategy,
+    bars: dict,
+    initial_capital: float,
+    start: datetime,
+    end: datetime,
+    redis_url: str,
+) -> None:
+    """Synchronous backtest runner -- executed in ThreadPoolExecutor."""
+    client = redis_sync.from_url(redis_url, decode_responses=True)
+    start_time = time.monotonic()
+    try:
+        engine = BacktraderEngine()
+        result = engine.run(strategy, bars, initial_capital, start, end)
+        duration_ms = (time.monotonic() - start_time) * 1000
+        symbol_count = max(len(bars), 1)
+
+        # Update job status
+        raw = client.get(job_key)
+        job_data = json.loads(raw) if raw else {}
+        job_data.update({
+            "status": "complete",
+            "result": result.model_dump(mode="json"),
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        })
+        client.set(job_key, json.dumps(job_data), ex=3600)
+
+        # Persist result so GET /backtest/results picks it up via its Redis fallback
+        client.set(
+            f"strategy:results:{result.strategy_name}",
+            json.dumps(result.model_dump(mode="json")),
+        )
+
+        # Update timing calibration (rolling average, weight = 10%)
+        sample_ms = duration_ms / symbol_count
+        old_raw = client.get(_TIMING_KEY)
+        if old_raw is None:
+            updated_ms = sample_ms
+        else:
+            updated_ms = (float(old_raw) * 9 + sample_ms) / 10
+        client.set(_TIMING_KEY, str(updated_ms))
+
+    except Exception as exc:
+        raw = client.get(job_key)
+        job_data = json.loads(raw) if raw else {}
+        job_data.update({
+            "status": "failed",
+            "error": str(exc),
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        })
+        client.set(job_key, json.dumps(job_data), ex=3600)
+    finally:
+        client.close()
 
 
 class BacktestRequest(BaseModel):
@@ -61,11 +132,77 @@ async def get_strategy_rankings():
 
 @router.post("/backtest")
 async def run_backtest(request: BacktestRequest):
-    """Run a backtest for a specific strategy. Requires data to be loaded first."""
-    return {
-        "status": "not_implemented",
-        "message": "Backtest via API requires data ingestion (Phase 2). Use the strategy engine directly.",
+    """Submit a backtest job. Returns job_id for polling via GET /backtest/jobs/{id}."""
+    engine = await get_strategy_engine()
+    try:
+        strategy = engine.get_strategy(request.strategy_name)
+    except KeyError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Strategy '{request.strategy_name}' not found. "
+                   f"Available: {engine.list_strategies()}",
+        )
+
+    start = datetime.fromisoformat(request.start_date).replace(tzinfo=timezone.utc)
+    end = (
+        datetime.fromisoformat(request.end_date).replace(tzinfo=timezone.utc)
+        if request.end_date
+        else datetime.now(timezone.utc)
+    )
+
+    storage = await get_storage()
+    bar_lists = await asyncio.gather(
+        *[storage.get_ohlcv(sym, start, end) for sym in request.symbols],
+        return_exceptions=True,
+    )
+    bars = {
+        sym: bar_list
+        for sym, bar_list in zip(request.symbols, bar_lists)
+        if isinstance(bar_list, list) and len(bar_list) > 0
     }
+    if not bars:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No OHLCV data found for: {request.symbols}. "
+                   "Run the data backfill script to load historical bars.",
+        )
+
+    redis = await get_redis()
+    ms_raw = await redis.get(_TIMING_KEY)
+    ms_per_symbol = float(ms_raw) if ms_raw else _TIMING_FALLBACK_MS
+    estimated_seconds = round(len(request.symbols) * ms_per_symbol / 1000, 2)
+
+    job_id = str(uuid.uuid4())
+    job_key = f"backtest:job:{job_id}"
+    job_data = {
+        "status": "running",
+        "strategy_name": request.strategy_name,
+        "symbol_count": len(request.symbols),
+        "estimated_seconds": estimated_seconds,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await redis.set(job_key, json.dumps(job_data), ex=3600)
+
+    settings = get_settings()
+    loop = asyncio.get_running_loop()
+    future = loop.run_in_executor(
+        _BACKTEST_EXECUTOR,
+        _run_backtest_thread,
+        job_key,
+        strategy,
+        bars,
+        request.initial_capital,
+        start,
+        end,
+        settings.redis.url,
+    )
+    future.add_done_callback(
+        lambda f: f.exception() and logger.error(
+            "backtest executor raised unhandled exception", exc_info=f.exception()
+        )
+    )
+
+    return {"job_id": job_id, "status": "running", "estimated_seconds": estimated_seconds}
 
 
 @router.get("/backtest/results")
@@ -102,6 +239,16 @@ async def get_backtest_results(
     except Exception:
         results = []
     return {"results": results[:limit]}
+
+
+@router.get("/backtest/jobs/{job_id}")
+async def get_backtest_job(job_id: str):
+    """Poll backtest job status. Returns status + result when complete."""
+    redis = await get_redis()
+    raw = await redis.get(f"backtest:job:{job_id}")
+    if not raw:
+        raise HTTPException(status_code=404, detail="Job not found or expired")
+    return json.loads(raw)
 
 
 @router.get("/ml/signals")
