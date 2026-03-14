@@ -187,3 +187,37 @@ class TestFeatureValues:
         dt = datetime(2026, 1, 15)
         df = calc.compute(None, [dt])
         assert df.index.name == "date"
+
+    def test_score_exactly_30_days_ago_included_in_30d_window(self):
+        """Score at exactly the 30-day boundary should be included (>= not >)."""
+        calc = SentimentFeatureCalculator()
+        as_of = datetime.now().replace(tzinfo=None)
+        exact_30d = as_of - timedelta(days=30)
+        scores = [SentimentScore(
+            symbol="AAPL",
+            timestamp=exact_30d,
+            source="news",
+            text_snippet="test",
+            sentiment=0.8,
+            confidence=0.8,
+        )]
+        df = calc.compute(scores, [as_of])
+        assert not np.isnan(df["sentiment_mean_30d"].iloc[0])
+        assert df["sentiment_mean_30d"].iloc[0] == pytest.approx(0.8)
+
+    def test_score_exactly_7_days_ago_included_in_7d_window(self):
+        """Score at exactly the 7-day boundary should be included (>= not >)."""
+        calc = SentimentFeatureCalculator()
+        as_of = datetime.now().replace(tzinfo=None)
+        exact_7d = as_of - timedelta(days=7)
+        scores = [SentimentScore(
+            symbol="AAPL",
+            timestamp=exact_7d,
+            source="news",
+            text_snippet="test",
+            sentiment=0.6,
+            confidence=0.6,
+        )]
+        df = calc.compute(scores, [as_of])
+        assert not np.isnan(df["sentiment_mean_7d"].iloc[0])
+        assert df["sentiment_mean_7d"].iloc[0] == pytest.approx(0.6)

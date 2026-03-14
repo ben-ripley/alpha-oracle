@@ -20,7 +20,7 @@ _MODEL_PRICING: dict[str, tuple[float, float]] = {
     "us.anthropic.claude-sonnet-4-20250514-v1:0": (3.0, 15.0),
     "us.anthropic.claude-haiku-4-5-20251001-v1:0": (0.25, 1.25),
 }
-_DEFAULT_PRICING = (3.0, 15.0)  # fallback if model not in dict
+_DEFAULT_PRICING = (0.25, 1.25)  # fallback to cheapest known model tier; avoids overcharging unknown cheap models
 
 
 def _model_cost(model_name: str, input_tokens: int, output_tokens: int) -> float:

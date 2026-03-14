@@ -53,11 +53,11 @@ class SentimentFeatureCalculator:
             scores_30d = [
                 s for s in sorted_scores
                 if s.timestamp.replace(tzinfo=None) <= dt.to_pydatetime().replace(tzinfo=None)
-                and s.timestamp.replace(tzinfo=None) > (dt - timedelta(days=30)).to_pydatetime().replace(tzinfo=None)
+                and s.timestamp.replace(tzinfo=None) >= (dt - timedelta(days=30)).to_pydatetime().replace(tzinfo=None)
             ]
             scores_7d = [
                 s for s in scores_30d
-                if s.timestamp.replace(tzinfo=None) > (dt - timedelta(days=7)).to_pydatetime().replace(tzinfo=None)
+                if s.timestamp.replace(tzinfo=None) >= (dt - timedelta(days=7)).to_pydatetime().replace(tzinfo=None)
             ]
 
             # Filing-specific scores (source contains "filing" or "10-k" etc.)

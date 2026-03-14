@@ -109,7 +109,7 @@ async def deactivate_kill_switch():
         await risk_mgr.kill_switch.deactivate()
         return {"status": "deactivated"}
     except ValueError as e:
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/kill-switch/status")

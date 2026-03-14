@@ -92,6 +92,22 @@ class TestIsRecentlyVerified:
             assert engine.is_recently_verified(max_age_hours=1) is False
             assert engine.is_recently_verified(max_age_hours=3) is True
 
+    def test_exactly_at_boundary_is_recent(self):
+        """A timestamp exactly max_age_hours ago should be considered recent (boundary inclusive)."""
+        import src.risk.llm_guardrails as _mod
+        from src.risk.llm_guardrails import LLMGuardrailsEngine
+        engine = LLMGuardrailsEngine()
+
+        fixed_now = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        exact_boundary = fixed_now - timedelta(hours=24)
+
+        mock_dt = MagicMock()
+        mock_dt.now.return_value = fixed_now
+
+        with patch.object(_mod, "datetime", mock_dt):
+            with patch.object(engine, "_get_last_verified_timestamp", return_value=exact_boundary):
+                assert engine.is_recently_verified(max_age_hours=24) is True
+
 
 # ---------------------------------------------------------------------------
 # Store and retrieve timestamp (Redis integration tests via mocks)

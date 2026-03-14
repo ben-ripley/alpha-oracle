@@ -63,7 +63,12 @@ class TestModelCost:
 
     def test_unknown_model_uses_default(self):
         cost = _model_cost("unknown-model", 1_000_000, 0)
-        assert cost == pytest.approx(3.0)  # fallback to sonnet rate
+        assert cost == pytest.approx(0.25)  # fallback to haiku tier (cheapest known model)
+
+    def test_unknown_model_fallback_not_at_sonnet_rate(self):
+        """Unknown cheap models should not be overcharged at Sonnet pricing."""
+        cost = _model_cost("some-unknown-cheap-model", 1_000_000, 0)
+        assert cost < 3.0  # must not use Sonnet-tier $3/M input pricing
 
     def test_zero_tokens(self):
         assert _model_cost("claude-sonnet-4-20250514", 0, 0) == 0.0

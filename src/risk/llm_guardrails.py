@@ -49,7 +49,7 @@ class LLMGuardrailsEngine:
         if ts.tzinfo is None:
             ts = ts.replace(tzinfo=timezone.utc)
         age_hours = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
-        return age_hours < max_age_hours
+        return age_hours <= max_age_hours
 
     def get_status(self) -> dict:
         """Return a status dict for the risk dashboard."""
