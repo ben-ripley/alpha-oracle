@@ -145,7 +145,7 @@ async def run_backtest(request: BacktestRequest):
 
     start = datetime.fromisoformat(request.start_date).replace(tzinfo=timezone.utc)
     end = (
-        datetime.fromisoformat(request.end_date)
+        datetime.fromisoformat(request.end_date).replace(tzinfo=timezone.utc)
         if request.end_date
         else datetime.now(timezone.utc)
     )
