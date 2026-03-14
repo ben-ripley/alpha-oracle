@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from math import sin
 
 import pytest
+from unittest.mock import MagicMock
 
 from src.core.models import (
     OHLCV,
@@ -398,3 +399,65 @@ class TestStrategyRanker:
         ]
         rankings = ranker.rank_strategies(results)
         assert rankings[0].strategy_name == "strong"
+
+
+# ---------------------------------------------------------------------------
+# BacktraderEngine position sizing (Task 1)
+# ---------------------------------------------------------------------------
+
+class TestBacktraderPositionSizing:
+    """Verify equal-weight sizing and capacity cap in SignalStrategy."""
+
+    def _make_signals(
+        self,
+        symbols: list[str],
+        buy_day: int,
+        sell_day: int,
+        base_date: datetime,
+    ) -> list[Signal]:
+        """Generate LONG signals on buy_day and FLAT signals on sell_day for each symbol."""
+        signals = []
+        for sym in symbols:
+            signals.append(Signal(
+                symbol=sym,
+                timestamp=base_date + timedelta(days=buy_day),
+                direction=SignalDirection.LONG,
+                strength=0.8,
+                strategy_name="test",
+            ))
+            signals.append(Signal(
+                symbol=sym,
+                timestamp=base_date + timedelta(days=sell_day),
+                direction=SignalDirection.FLAT,
+                strength=0.8,
+                strategy_name="test",
+            ))
+        return signals
+
+    def test_capacity_cap_limits_open_positions(self):
+        """With max_positions=1, only 1 of 2 simultaneous LONG signals should execute."""
+        from src.strategy.backtest.backtrader_engine import BacktraderEngine
+
+        base = datetime(2024, 1, 2, tzinfo=timezone.utc)
+        bars = {
+            "AAPL": _make_ohlcv("AAPL", days=20, base=100.0),
+            "MSFT": _make_ohlcv("MSFT", days=20, base=100.0),
+        }
+        signals = self._make_signals(["AAPL", "MSFT"], buy_day=2, sell_day=10, base_date=base)
+
+        engine = BacktraderEngine(max_positions=1)
+        strategy_stub = MagicMock()
+        strategy_stub.name = "test"
+        strategy_stub.min_hold_days = 2
+        strategy_stub.generate_signals = MagicMock(return_value=signals)
+
+        result = engine.run(
+            strategy_stub,
+            bars,
+            initial_capital=10000.0,
+            start=base,
+            end=base + timedelta(days=19),
+        )
+
+        # With max_positions=1, at most 1 round-trip trade can complete
+        assert result.total_trades <= 1
