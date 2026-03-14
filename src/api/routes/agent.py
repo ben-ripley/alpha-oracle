@@ -215,8 +215,9 @@ async def approve_recommendation(recommendation_id: str):
 
     rec.human_approved = True
     ttl = await redis.ttl(key)
-    if ttl <= 0:
-        raise HTTPException(status_code=410, detail="Recommendation expired before update")
+    if ttl < 0:
+        from src.core.config import get_settings
+        ttl = get_settings().agent.cache_ttl_seconds
     await redis.set(key, rec.model_dump_json(), ex=ttl)
 
     # Publish approval event
@@ -253,8 +254,9 @@ async def reject_recommendation(recommendation_id: str):
 
     rec.human_approved = False
     ttl = await redis.ttl(key)
-    if ttl <= 0:
-        raise HTTPException(status_code=410, detail="Recommendation expired before update")
+    if ttl < 0:
+        from src.core.config import get_settings
+        ttl = get_settings().agent.cache_ttl_seconds
     await redis.set(key, rec.model_dump_json(), ex=ttl)
 
     await redis.publish("agent:recommendation", json.dumps({

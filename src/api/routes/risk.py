@@ -187,7 +187,7 @@ async def transition_autonomy_mode(request: TransitionRequest):
     }
 
     validator = AutonomyValidator()
-    approved, reasons = validator.validate_transition(current_mode, target_mode, portfolio_metrics)
+    approved, reasons = await validator.validate_transition(current_mode, target_mode, portfolio_metrics)
 
     if not approved:
         raise HTTPException(

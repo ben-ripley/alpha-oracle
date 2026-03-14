@@ -523,7 +523,15 @@ async def weekly_retrain_job() -> None:
                 if not bars:
                     continue
 
-                feat_df = store.compute_features(symbol, bars)
+                sentiment_scores = await storage.get_sentiment(symbol, days=730)
+                analyst_estimates = await storage.get_analyst_estimates(symbol)
+
+                feat_df = store.compute_features(
+                    symbol,
+                    bars,
+                    sentiment_scores=sentiment_scores,
+                    analyst_estimates=analyst_estimates,
+                )
                 if feat_df.empty:
                     continue
 

@@ -61,7 +61,7 @@ class MultiStrategyOptimizer:
 
         # Per-strategy annualized stats
         mu = np.mean(returns_matrix, axis=0) * _ANNUALIZATION_FACTOR  # annualized mean
-        cov_raw = np.cov(returns_matrix, rowvar=False) * _ANNUALIZATION_FACTOR  # annualized cov
+        cov_raw = np.cov(returns_matrix, rowvar=False)  # daily cov — do NOT annualize here
         # np.cov on a single column returns a scalar; ensure shape is always (n, n)
         cov = np.atleast_2d(cov_raw)
 
@@ -104,9 +104,10 @@ class MultiStrategyOptimizer:
             weights = w0
 
         # Compute portfolio-level statistics
+        # mu is annualized; cov is daily — annualize vol before computing Sharpe
         port_return = float(np.dot(weights, mu))
         port_var = float(np.dot(weights, np.dot(cov, weights)))
-        port_vol = float(np.sqrt(max(port_var, 0.0)))
+        port_vol = float(np.sqrt(max(port_var, 0.0)) * np.sqrt(_ANNUALIZATION_FACTOR))
         port_sharpe = (port_return / port_vol) if port_vol > 0 else 0.0
 
         # Contribution to risk: weight * marginal contribution (w_i * (Cov * w)_i / port_vol)
