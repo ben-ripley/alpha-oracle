@@ -75,6 +75,8 @@ scheduler:
   weekly_fundamentals_cron: "0 6 * * 6"
   biweekly_altdata_cron: "0 7 1,15 * *"
   weekly_retrain_cron: "0 2 * * 0"
+  weekly_options_flow_cron: "0 7 * * 6"
+  weekly_trends_cron: "30 7 * * 6"
 
 router:
   size_threshold_small_pct: 0.1

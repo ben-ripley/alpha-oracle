@@ -18,6 +18,8 @@ def mock_settings():
     settings.scheduler.weekly_retrain_cron = "0 2 * * 0"
     settings.scheduler.daily_sentiment_cron = "30 17 * * 1-5"
     settings.scheduler.daily_briefing_cron = "0 8 * * 1-5"
+    settings.scheduler.weekly_options_flow_cron = "0 7 * * 6"
+    settings.scheduler.weekly_trends_cron = "30 7 * * 6"
     return settings
 
 

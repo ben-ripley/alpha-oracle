@@ -167,7 +167,7 @@ class RiskManagerImpl(RiskManager):
                     "Transitioning to FULL_AUTONOMOUS requires typed confirmation 'FULL_AUTONOMOUS'"
                 ]
 
-        return self._autonomy_validator.validate_transition(
+        return await self._autonomy_validator.validate_transition(
             current_mode, target_mode, portfolio_metrics
         )
 

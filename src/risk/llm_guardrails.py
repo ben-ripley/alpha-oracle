@@ -95,8 +95,8 @@ class LLMGuardrailsEngine:
 
         except Exception as exc:
             logger.error("guardrail_check_error", error=str(exc))
-            # Fail open: if we can't check, assume safe
-            return True
+            # Fail closed: if we can't check, assume unsafe
+            return False
 
     # ------------------------------------------------------------------
     # Redis helpers

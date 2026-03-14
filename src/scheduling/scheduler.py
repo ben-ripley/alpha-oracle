@@ -80,14 +80,14 @@ class TradingScheduler:
         )
         self._scheduler.add_job(
             weekly_options_flow_job,
-            CronTrigger.from_crontab(self._settings.biweekly_altdata_cron),
+            CronTrigger.from_crontab(self._settings.weekly_options_flow_cron),
             id="weekly_options_flow",
             name="Weekly Options Flow Fetch",
             replace_existing=True,
         )
         self._scheduler.add_job(
             weekly_trends_job,
-            CronTrigger.from_crontab(self._settings.biweekly_altdata_cron),
+            CronTrigger.from_crontab(self._settings.weekly_trends_cron),
             id="weekly_trends",
             name="Weekly Google Trends Fetch",
             replace_existing=True,

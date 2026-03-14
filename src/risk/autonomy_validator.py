@@ -27,7 +27,7 @@ _FULL_AUTONOMOUS_MIN_DAYS = 90
 class AutonomyValidator:
     """Validates preconditions for autonomy mode transitions."""
 
-    def validate_transition(
+    async def validate_transition(
         self,
         current_mode: AutonomyMode,
         target_mode: AutonomyMode,
@@ -80,7 +80,7 @@ class AutonomyValidator:
             return self._validate_manual_to_bounded(portfolio_metrics)
 
         if current_mode == AutonomyMode.BOUNDED_AUTONOMOUS and target_mode == AutonomyMode.FULL_AUTONOMOUS:
-            return self._validate_bounded_to_full(portfolio_metrics)
+            return await self._validate_bounded_to_full(portfolio_metrics)
 
         return False, [f"Unhandled transition: {current_mode.value} -> {target_mode.value}"]
 
@@ -130,7 +130,7 @@ class AutonomyValidator:
         )
         return approved, reasons
 
-    def _validate_bounded_to_full(self, metrics: dict) -> tuple[bool, list[str]]:
+    async def _validate_bounded_to_full(self, metrics: dict) -> tuple[bool, list[str]]:
         """BOUNDED_AUTONOMOUS -> FULL_AUTONOMOUS: 90 days, Sharpe, drawdown, circuit breakers, guardrails."""
         settings = get_settings().risk
         min_sharpe = settings.autonomy_min_sharpe
@@ -162,7 +162,7 @@ class AutonomyValidator:
                 "Circuit breakers must have been triggered and tested at least once before FULL_AUTONOMOUS"
             )
 
-        if not self._guardrails_recently_verified():
+        if not await self._guardrails_recently_verified():
             reasons.append(
                 "LLM guardrails have not been verified recently — run guardrail self-test first"
             )
@@ -177,7 +177,7 @@ class AutonomyValidator:
         )
         return approved, reasons
 
-    def _guardrails_recently_verified(self) -> bool:
+    async def _guardrails_recently_verified(self) -> bool:
         """Check if LLM guardrails were verified recently (within 24h).
 
         Reads Redis key `risk:guardrails:last_verified`.
@@ -187,14 +187,10 @@ class AutonomyValidator:
         try:
             from datetime import datetime, timezone
 
-            import redis
+            from src.core.redis import get_redis
 
-            from src.core.config import get_settings as _get_settings
-
-            redis_url = _get_settings().redis.url
-            client = redis.from_url(redis_url, decode_responses=True)
-            ts_str = client.get("risk:guardrails:last_verified")
-            client.close()
+            redis = await get_redis()
+            ts_str = await redis.get("risk:guardrails:last_verified")
 
             if not ts_str:
                 return False

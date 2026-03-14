@@ -173,6 +173,8 @@ class SchedulerSettings(BaseSettings):
     weekly_retrain_cron: str = "0 2 * * 0"  # 2am Sunday
     daily_sentiment_cron: str = "30 17 * * 1-5"  # 5:30pm ET weekdays (after bars)
     daily_briefing_cron: str = "0 8 * * 1-5"  # 8am ET weekdays
+    weekly_options_flow_cron: str = "0 7 * * 6"  # 7am Saturday
+    weekly_trends_cron: str = "30 7 * * 6"  # 7:30am Saturday
 
 
 class RouterSettings(BaseSettings):

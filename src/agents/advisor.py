@@ -212,12 +212,27 @@ class TradeAdvisorAgent(BaseAgent):
 
         return await _attempt()
 
+    _MAX_RECS_PER_SYMBOL = 50
+
     async def _store_recommendation(self, rec) -> None:
         redis = await self._get_redis()
         rec_id = str(uuid.uuid4())
         key = f"agent:recommendations:{rec_id}"
 
         await redis.set(key, rec.model_dump_json(), ex=_RECS_TTL)
+
+        # Maintain recent index (all recommendations, newest first)
+        await redis.lpush("agent:recommendations:recent", rec_id)
+        await redis.ltrim("agent:recommendations:recent", 0, 199)
+        await redis.expire("agent:recommendations:recent", _RECS_TTL)
+
+        # Maintain per-symbol index
+        symbol = rec.symbol or ""
+        if symbol:
+            symbol_key = f"agent:recommendations:by_symbol:{symbol}"
+            await redis.lpush(symbol_key, rec_id)
+            await redis.ltrim(symbol_key, 0, self._MAX_RECS_PER_SYMBOL - 1)
+            await redis.expire(symbol_key, _RECS_TTL)
 
         # Queue pending recommendations for human review
         if rec.human_approved is None:

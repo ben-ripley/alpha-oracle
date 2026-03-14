@@ -137,7 +137,7 @@ async def get_autonomy_mode_readiness():
     readiness = {}
 
     for mode in AutonomyMode:
-        approved, reasons = validator.validate_transition(
+        approved, reasons = await validator.validate_transition(
             current_mode, mode, portfolio_metrics={}
         )
         readiness[mode.value] = {"approved": approved, "blocking_reasons": reasons}
@@ -196,7 +196,7 @@ async def transition_autonomy_mode(request: TransitionRequest):
         )
 
     if hasattr(risk_mgr, "transition_autonomy_mode"):
-        await risk_mgr.transition_autonomy_mode(target_mode)
+        await risk_mgr.transition_autonomy_mode(target_mode, portfolio_metrics, request.confirmation)
 
     return {
         "status": "transitioned",
