@@ -23,6 +23,8 @@ export const api = {
       request<any>('/strategies/backtest', { method: 'POST', body: JSON.stringify(params) }),
     results: (strategyName?: string, limit = 20) =>
       request<any>(`/strategies/backtest/results?${strategyName ? `strategy_name=${strategyName}&` : ''}limit=${limit}`),
+    backtestJob: (jobId: string) =>
+      request<any>(`/strategies/backtest/jobs/${jobId}`),
     mlSignals: () => request<any>('/strategies/ml/signals'),
     mlFeatureImportance: () => request<any>('/strategies/ml/feature-importance'),
     mlMonitoring: () => request<any>('/strategies/ml/monitoring'),
