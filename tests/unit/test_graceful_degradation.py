@@ -61,12 +61,13 @@ class TestDailyBriefingJobDisabled:
             await daily_briefing_job()  # Must not raise
 
     async def test_idempotent_via_done_key(self):
-        """daily_briefing_job skips when briefing already exists in Redis."""
+        """daily_briefing_job skips when lock already held (SET NX returns None)."""
         mock_settings = MagicMock()
         mock_settings.agent.enabled = True
 
         mock_redis = AsyncMock()
-        mock_redis.exists.return_value = 1  # briefing already done
+        # set(nx=True) returns None when lock is already held
+        mock_redis.set = AsyncMock(return_value=None)
 
         with (
             patch("src.core.config.get_settings", return_value=mock_settings),
@@ -75,7 +76,9 @@ class TestDailyBriefingJobDisabled:
             from src.scheduling.jobs import daily_briefing_job
             await daily_briefing_job()
 
-        mock_redis.exists.assert_called_once()
+        # Lock was attempted but not acquired — no briefing generated
+        mock_redis.set.assert_called_once()
+        mock_redis.publish.assert_not_called()
 
 
 class TestWeeklyOptionsFlowJob:

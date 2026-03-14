@@ -332,7 +332,10 @@ async def daily_briefing_job() -> None:
         redis = await get_redis()
         today = _now_et().date().isoformat()
         done_key = f"agent:briefings:{today}"
-        if await redis.exists(done_key):
+        lock_key = f"agent:briefings:{today}:lock"
+        # Atomic check: SET NX returns False if key already exists (another run owns it)
+        acquired = await redis.set(lock_key, "1", nx=True, ex=3600)
+        if not acquired:
             logger.info("job.daily_briefing.already_done", date=today)
             return
 

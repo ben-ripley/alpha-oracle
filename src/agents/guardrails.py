@@ -23,14 +23,57 @@ _BROKER_ACCESS_PATTERNS = [
 
 
 def guardrail(func: Callable) -> Callable:
-    """Decorator for BaseAgent.run() methods that validates output is advisory-only."""
+    """Decorator for BaseAgent.run() methods that validates output is advisory-only.
+
+    If the output violates guardrails, any stored data is cleaned up from Redis
+    before re-raising the error.
+    """
 
     @functools.wraps(func)
     async def wrapper(self, context, *args, **kwargs) -> AgentResult:
         result: AgentResult = await func(self, context, *args, **kwargs)
-        return validate_output(result)
+        try:
+            return validate_output(result)
+        except GuardrailViolationError:
+            # Clean up any data stored during run() to avoid poisoned cache
+            await _cleanup_stored_output(self, result)
+            raise
 
     return wrapper
+
+
+async def _cleanup_stored_output(agent: Any, result: AgentResult) -> None:
+    """Best-effort removal of data stored by an agent whose output failed guardrails."""
+    try:
+        redis_client = await agent._get_redis() if hasattr(agent, "_get_redis") else None
+        if redis_client is None:
+            return
+
+        output = result.output
+        if output is None:
+            return
+
+        # Remove by known key patterns based on output model type
+        model_type = type(output).__name__
+        if model_type == "AgentAnalysis" and hasattr(output, "symbol"):
+            # Analyses are stored under agent:analyses:{id} — we don't have the ID,
+            # but the most recent entry on the by_symbol list is the one we just stored
+            symbol_key = f"agent:analyses:by_symbol:{output.symbol}"
+            bad_id = await redis_client.lpop(symbol_key)
+            if bad_id:
+                await redis_client.delete(f"agent:analyses:{bad_id}")
+        elif model_type == "TradeRecommendation":
+            # Recent recommendation is at the head of the recent list
+            bad_id = await redis_client.lpop("agent:recommendations:recent")
+            if bad_id:
+                await redis_client.delete(f"agent:recommendations:{bad_id}")
+        elif model_type == "DailyBriefing" and hasattr(output, "date"):
+            date_str = output.date.strftime("%Y-%m-%d") if hasattr(output.date, "strftime") else str(output.date)
+            await redis_client.delete(f"agent:briefings:{date_str}")
+
+        logger.warning("agent.guardrail_cleanup_complete", model_type=model_type)
+    except Exception as exc:
+        logger.error("agent.guardrail_cleanup_failed", error=str(exc))
 
 
 def validate_output(result: AgentResult) -> AgentResult:

@@ -3,10 +3,14 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+import structlog
+
 from src.api.dependencies import get_analyst_agent, get_advisor_agent, get_briefing_agent
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -78,7 +82,7 @@ async def analyze_filing(request: AnalyzeFilingRequest):
 
 
 @router.get("/analyses")
-async def list_analyses(symbol: str | None = None, limit: int = 20):
+async def list_analyses(symbol: str | None = None, limit: int = Query(20, ge=1, le=100)):
     """List recent filing analyses, optionally filtered by symbol."""
     _check_agent_enabled()
 
@@ -159,7 +163,7 @@ async def recommend_trade(symbol: str, request: RecommendRequest = RecommendRequ
 
 
 @router.get("/recommendations")
-async def list_recommendations(symbol: str | None = None, limit: int = 20):
+async def list_recommendations(symbol: str | None = None, limit: int = Query(20, ge=1, le=100)):
     """List recent trade recommendations from Redis."""
     _check_agent_enabled()
 
@@ -183,7 +187,7 @@ async def list_recommendations(symbol: str | None = None, limit: int = 20):
                 if rec.schema_version == 1:
                     recommendations.append(rec.model_dump())
             except Exception:
-                pass
+                logger.warning("recommendation_deserialize_error", rec_id=rec_id)
 
     return {"recommendations": recommendations, "total": len(recommendations)}
 
@@ -294,7 +298,7 @@ async def get_latest_briefing():
 
 
 @router.get("/briefing/history")
-async def get_briefing_history(limit: int = 7):
+async def get_briefing_history(limit: int = Query(7, ge=1, le=90)):
     """List recent daily briefings (up to limit days)."""
     _check_agent_enabled()
 

@@ -21,7 +21,8 @@ def _mock_redis(*, done_exists: bool = False) -> AsyncMock:
     mr = AsyncMock()
     mr.exists.return_value = 1 if done_exists else 0
     mr.sismember.return_value = False
-    mr.set = AsyncMock()
+    # set(nx=True) returns None if key exists, True if set — simulates atomic lock
+    mr.set = AsyncMock(side_effect=lambda *a, **kw: None if (done_exists and kw.get("nx")) else True)
     mr.get = AsyncMock(return_value=None)
     mr.publish = AsyncMock()
     return mr
@@ -193,7 +194,10 @@ class TestDailyBriefingJob:
              patch("src.core.redis.get_redis", new=AsyncMock(return_value=mock_redis)):
             await daily_briefing_job()
 
-        mock_redis.set.assert_not_called()
+        # set is called once for the lock attempt (nx=True), but should not store briefing data
+        mock_redis.set.assert_called_once()
+        args, kwargs = mock_redis.set.call_args
+        assert kwargs.get("nx") is True  # Only the lock attempt, not a briefing store
         mock_redis.publish.assert_not_called()
 
     @pytest.mark.asyncio
@@ -221,7 +225,8 @@ class TestDailyBriefingJob:
             await daily_briefing_job()
 
         mock_agent.run.assert_called_once()
-        mock_redis.set.assert_called_once()
+        # set called twice: once for the lock (nx=True), once for the briefing data
+        assert mock_redis.set.call_count == 2
         mock_redis.publish.assert_called_once()
         publish_channel = mock_redis.publish.call_args[0][0]
         assert publish_channel == "agent:briefing"
@@ -246,7 +251,10 @@ class TestDailyBriefingJob:
              patch("src.execution.broker_adapters.paper_stub.PaperStubBroker", return_value=mock_broker):
             await daily_briefing_job()
 
-        mock_redis.set.assert_not_called()
+        # set called once for the lock only — no briefing data stored when output is None
+        mock_redis.set.assert_called_once()
+        args, kwargs = mock_redis.set.call_args
+        assert kwargs.get("nx") is True
         mock_redis.publish.assert_not_called()
 
 
