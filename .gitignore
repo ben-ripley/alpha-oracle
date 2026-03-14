@@ -39,4 +39,4 @@ web/.vite/
 .ipynb_checkpoints/
 
 .claude/
-memory/
+memory/.worktrees/
