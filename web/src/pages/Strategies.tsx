@@ -148,6 +148,12 @@ function StrategyHelp({
 // Main page
 // ---------------------------------------------------------------------------
 
+type BacktestState =
+  | { phase: 'idle' }
+  | { phase: 'running'; jobId: string; estimatedSeconds: number; startedAt: number }
+  | { phase: 'complete'; result: any }
+  | { phase: 'failed'; error: string };
+
 export function Strategies() {
   const { data: rankingsData } = useApi(() => api.strategies.rankings());
   const { data: resultsData } = useApi(() => api.strategies.results());
@@ -174,13 +180,8 @@ export function Strategies() {
     };
   });
 
-  type BacktestState =
-    | { phase: 'idle' }
-    | { phase: 'running'; jobId: string; estimatedSeconds: number; startedAt: number }
-    | { phase: 'complete'; result: any }
-    | { phase: 'failed'; error: string };
-
   const [backtestState, setBacktestState] = useState<BacktestState>({ phase: 'idle' });
+  const btTransitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [btForm, setBtForm] = useState({
@@ -212,10 +213,10 @@ export function Strategies() {
         const job = await api.strategies.backtestJob(jobId);
         if (job.status === 'complete') {
           setProgress(1);
-          setTimeout(() => {
+          clearInterval(interval);
+          btTransitionRef.current = setTimeout(() => {
             setBacktestState({ phase: 'complete', result: job.result });
           }, 300);
-          clearInterval(interval);
         } else if (job.status === 'failed') {
           setBacktestState({ phase: 'failed', error: job.error ?? 'Unknown error' });
           clearInterval(interval);
@@ -224,7 +225,10 @@ export function Strategies() {
         // transient error -- keep polling
       }
     }, 2000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (btTransitionRef.current) clearTimeout(btTransitionRef.current);
+    };
   }, [backtestState]);
 
   const handleRunBacktest = async () => {
@@ -423,7 +427,7 @@ export function Strategies() {
             <div className="flex items-end">
               <button
                 onClick={handleRunBacktest}
-                disabled={backtestState.phase === 'running' || !btForm.strategy_name || !btForm.symbols}
+                disabled={backtestState.phase === 'running' || !btForm.strategy_name || !btForm.symbols.trim()}
                 className="w-full rounded-lg border border-cyan/40 bg-cyan/10 px-4 py-2 font-mono text-xs font-semibold text-cyan hover:bg-cyan/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {backtestState.phase === 'running' ? 'Running...' : 'Run Backtest'}
@@ -463,12 +467,12 @@ export function Strategies() {
               <div className="font-mono text-[9px] uppercase tracking-wider text-cyan">Backtest Results</div>
               <div className="grid grid-cols-4 gap-3">
                 {[
-                  { label: 'Total Return', value: `${backtestState.result.total_return_pct?.toFixed(1)}%` },
-                  { label: 'Annual Return', value: `${backtestState.result.annual_return_pct?.toFixed(1)}%` },
-                  { label: 'Sharpe', value: backtestState.result.sharpe_ratio?.toFixed(2) },
-                  { label: 'Sortino', value: backtestState.result.sortino_ratio?.toFixed(2) },
-                  { label: 'Max DD', value: `${backtestState.result.max_drawdown_pct?.toFixed(1)}%` },
-                  { label: 'Profit Factor', value: backtestState.result.profit_factor?.toFixed(2) },
+                  { label: 'Total Return', value: `${(backtestState.result.total_return_pct ?? 0).toFixed(1)}%` },
+                  { label: 'Annual Return', value: `${(backtestState.result.annual_return_pct ?? 0).toFixed(1)}%` },
+                  { label: 'Sharpe', value: (backtestState.result.sharpe_ratio ?? 0).toFixed(2) },
+                  { label: 'Sortino', value: (backtestState.result.sortino_ratio ?? 0).toFixed(2) },
+                  { label: 'Max DD', value: `${(backtestState.result.max_drawdown_pct ?? 0).toFixed(1)}%` },
+                  { label: 'Profit Factor', value: (backtestState.result.profit_factor ?? 0).toFixed(2) },
                   { label: 'Win Rate', value: `${((backtestState.result.win_rate ?? 0) * 100).toFixed(1)}%` },
                   { label: 'Trades', value: String(backtestState.result.total_trades ?? 0) },
                 ].map(m => (
