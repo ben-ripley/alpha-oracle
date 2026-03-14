@@ -289,6 +289,8 @@ async def weekly_retrain_job() -> None:
                 if feat_df.empty:
                     continue
 
+                store.save(feat_df, symbol)
+
                 # Add close prices for target generation.
                 # Must be done per-symbol so forward-return shift doesn't bleed
                 # across symbol boundaries.

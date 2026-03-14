@@ -77,6 +77,37 @@ AI-driven automated stock trading system for a retail investor managing US equit
 
 ---
 
+## Phase 4 (Optional): Expanded Universe — S&P 400 / S&P 600
+
+Extend the trading universe beyond S&P 500 to include mid-cap (S&P 400) and/or small-cap (S&P 600) equities, increasing the symbol pool from ~425 to ~1,500 and giving the ML model a broader cross-section of return patterns.
+
+### Why mid/small-cap over full Nasdaq
+- S&P 400 and S&P 600 are curated, liquid, well-documented indices — no penny stocks or micro-caps
+- Meaningful diversification away from large-cap tech concentration in S&P 500
+- Existing risk controls (min_price=$5, position limits, PDT guard) apply without modification
+- Full Nasdaq (~3,300 symbols) introduces too much illiquid noise for a <$25K account
+
+### Work required
+
+| Task | Deliverable |
+|---|---|
+| 1 | Update `SymbolUniverse` (`src/data/universe.py`) to support multiple index sources — Wikipedia scrape for S&P 400 and S&P 600, separate Redis cache keys, configurable via `settings.yaml` |
+| 2 | Add `universe.indices` config list (`["sp500", "sp400", "sp600"]`) to `config/settings.yaml`; default remains `["sp500"]` |
+| 3 | Update `scripts/backfill_history_yf.py` to accept `--symbols sp400`, `--symbols sp600`, `--symbols sp1500` (combined) |
+| 4 | Extend `StrategyRanker` and `MLPipeline` to handle larger feature matrices without memory issues |
+| 5 | Add liquidity filter to universe: minimum 30-day ADV threshold to exclude thinly traded names |
+| 6 | Backfill S&P 400 and/or S&P 600 history (same 5-year window via yfinance) |
+| 7 | Re-run walk-forward validation and retrain XGBoost on expanded universe |
+
+### Prerequisites
+- Phase 3 complete and stable in BOUNDED_AUTONOMOUS mode
+- Sufficient compute for retraining on ~1,500 symbols (memory and time will increase ~3x)
+- Review position sizing — Kelly criterion on small-caps may produce oversized positions without an ADV cap
+
+**This phase is entirely optional.** The S&P 500 universe is sufficient for the system's target use case. Expand only if the ML model's signal quality plateaus and broader diversification is needed.
+
+---
+
 ## Cost Analysis
 
 | Phase | Monthly Cost | What's Included |
