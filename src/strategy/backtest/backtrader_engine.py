@@ -45,6 +45,9 @@ class SignalStrategy(bt.Strategy):
                 open_positions = len(self._entry_bars)
                 if open_positions >= self.params.max_positions:
                     continue
+                # Fixed to initial_capital (not current cash) to prevent
+                # allocation drift — each position gets an equal slice of
+                # starting capital regardless of when it opens.
                 position_value = self.params.initial_capital / self.params.max_positions
                 size = int(position_value / data.close[0])
                 if size > 0:

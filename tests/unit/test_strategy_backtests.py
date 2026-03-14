@@ -460,4 +460,4 @@ class TestBacktraderPositionSizing:
         )
 
         # With max_positions=1, at most 1 round-trip trade can complete
-        assert result.total_trades <= 1
+        assert result.total_trades == 1
