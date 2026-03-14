@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Trophy, ShieldCheck, HelpCircle, X, ExternalLink, Sparkles } from 'lucide-react';
+import { Trophy, ShieldCheck, HelpCircle, X, ExternalLink, Sparkles, Play, Loader2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatPct, formatNumber } from '../lib/format';
 import { useApi } from '../hooks/useApi';
@@ -174,6 +174,85 @@ export function Strategies() {
     };
   });
 
+  type BacktestState =
+    | { phase: 'idle' }
+    | { phase: 'running'; jobId: string; estimatedSeconds: number; startedAt: number }
+    | { phase: 'complete'; result: any }
+    | { phase: 'failed'; error: string };
+
+  const [backtestState, setBacktestState] = useState<BacktestState>({ phase: 'idle' });
+  const [progress, setProgress] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [btForm, setBtForm] = useState({
+    strategy_name: '',
+    symbols: '',
+    start_date: '2024-01-01',
+    end_date: '',
+    initial_capital: '20000',
+  });
+
+  // Progress bar ticker -- advances every 100ms while running
+  useEffect(() => {
+    if (backtestState.phase !== 'running') return;
+    const { startedAt, estimatedSeconds } = backtestState;
+    const interval = setInterval(() => {
+      const elapsedMs = Date.now() - startedAt;
+      setProgress(Math.min(elapsedMs / (estimatedSeconds * 1000), 0.95));
+      setElapsed(Math.round(elapsedMs / 1000));
+    }, 100);
+    return () => clearInterval(interval);
+  }, [backtestState]);
+
+  // Job polling -- checks status every 2s while running
+  useEffect(() => {
+    if (backtestState.phase !== 'running') return;
+    const { jobId } = backtestState;
+    const interval = setInterval(async () => {
+      try {
+        const job = await api.strategies.backtestJob(jobId);
+        if (job.status === 'complete') {
+          setProgress(1);
+          setTimeout(() => {
+            setBacktestState({ phase: 'complete', result: job.result });
+          }, 300);
+          clearInterval(interval);
+        } else if (job.status === 'failed') {
+          setBacktestState({ phase: 'failed', error: job.error ?? 'Unknown error' });
+          clearInterval(interval);
+        }
+      } catch {
+        // transient error -- keep polling
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [backtestState]);
+
+  const handleRunBacktest = async () => {
+    if (backtestState.phase === 'running') return;
+    setBacktestState({ phase: 'idle' });
+    setProgress(0);
+    setElapsed(0);
+    try {
+      const symbols = btForm.symbols.split(',').map(s => s.trim()).filter(Boolean);
+      const payload: any = {
+        strategy_name: btForm.strategy_name,
+        symbols,
+        start_date: btForm.start_date,
+        initial_capital: parseFloat(btForm.initial_capital) || 20000,
+      };
+      if (btForm.end_date) payload.end_date = btForm.end_date;
+      const res = await api.strategies.backtest(payload);
+      setBacktestState({
+        phase: 'running',
+        jobId: res.job_id,
+        estimatedSeconds: res.estimated_seconds ?? 5,
+        startedAt: Date.now(),
+      });
+    } catch (err: any) {
+      setBacktestState({ phase: 'failed', error: err.message ?? 'Failed to submit backtest' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between animate-in">
@@ -282,6 +361,133 @@ export function Strategies() {
           ))}
         </div>
       )}
+
+      {/* Run Backtest */}
+      <div className="animate-in">
+        <div className="flex items-center gap-2 mb-4">
+          <Play className="h-3.5 w-3.5 text-cyan" />
+          <h2 className="font-mono text-xs uppercase tracking-wider text-muted">Run Backtest</h2>
+        </div>
+        <div className="glow-border rounded-xl bg-surface p-5 space-y-4">
+          {/* Form */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-mono text-[9px] uppercase tracking-wider text-muted block mb-1">Strategy</label>
+              <select
+                className="w-full rounded-lg border border-border bg-panel px-3 py-2 font-mono text-xs text-text focus:border-cyan/50 focus:outline-none"
+                value={btForm.strategy_name}
+                onChange={e => setBtForm(f => ({ ...f, strategy_name: e.target.value }))}
+              >
+                <option value="">Select strategy...</option>
+                {strategyList.map((s: any) => (
+                  <option key={s.name} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="font-mono text-[9px] uppercase tracking-wider text-muted block mb-1">Symbols (comma-separated)</label>
+              <input
+                className="w-full rounded-lg border border-border bg-panel px-3 py-2 font-mono text-xs text-text placeholder:text-muted focus:border-cyan/50 focus:outline-none"
+                placeholder="AAPL, MSFT, GOOG"
+                value={btForm.symbols}
+                onChange={e => setBtForm(f => ({ ...f, symbols: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[9px] uppercase tracking-wider text-muted block mb-1">Start Date</label>
+              <input
+                type="date"
+                className="w-full rounded-lg border border-border bg-panel px-3 py-2 font-mono text-xs text-text focus:border-cyan/50 focus:outline-none"
+                value={btForm.start_date}
+                onChange={e => setBtForm(f => ({ ...f, start_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[9px] uppercase tracking-wider text-muted block mb-1">End Date (optional)</label>
+              <input
+                type="date"
+                className="w-full rounded-lg border border-border bg-panel px-3 py-2 font-mono text-xs text-text focus:border-cyan/50 focus:outline-none"
+                value={btForm.end_date}
+                onChange={e => setBtForm(f => ({ ...f, end_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[9px] uppercase tracking-wider text-muted block mb-1">Initial Capital ($)</label>
+              <input
+                type="number"
+                className="w-full rounded-lg border border-border bg-panel px-3 py-2 font-mono text-xs text-text focus:border-cyan/50 focus:outline-none"
+                value={btForm.initial_capital}
+                onChange={e => setBtForm(f => ({ ...f, initial_capital: e.target.value }))}
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={handleRunBacktest}
+                disabled={backtestState.phase === 'running' || !btForm.strategy_name || !btForm.symbols}
+                className="w-full rounded-lg border border-cyan/40 bg-cyan/10 px-4 py-2 font-mono text-xs font-semibold text-cyan hover:bg-cyan/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {backtestState.phase === 'running' ? 'Running...' : 'Run Backtest'}
+              </button>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          {backtestState.phase === 'running' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-xs text-dim">
+                  <Loader2 className="h-3 w-3 animate-spin text-cyan" />
+                  Running... {elapsed}s
+                </div>
+                <span className="font-mono text-xs text-muted">{Math.round(progress * 100)}%</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-panel overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-cyan transition-all duration-100"
+                  style={{ width: `${progress * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Error state */}
+          {backtestState.phase === 'failed' && (
+            <div className="rounded-lg border border-loss/30 bg-loss-dim px-4 py-3 font-mono text-xs text-loss">
+              {backtestState.error}
+            </div>
+          )}
+
+          {/* Results card */}
+          {backtestState.phase === 'complete' && backtestState.result && (
+            <div className="space-y-3">
+              <div className="font-mono text-[9px] uppercase tracking-wider text-cyan">Backtest Results</div>
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { label: 'Total Return', value: `${backtestState.result.total_return_pct?.toFixed(1)}%` },
+                  { label: 'Annual Return', value: `${backtestState.result.annual_return_pct?.toFixed(1)}%` },
+                  { label: 'Sharpe', value: backtestState.result.sharpe_ratio?.toFixed(2) },
+                  { label: 'Sortino', value: backtestState.result.sortino_ratio?.toFixed(2) },
+                  { label: 'Max DD', value: `${backtestState.result.max_drawdown_pct?.toFixed(1)}%` },
+                  { label: 'Profit Factor', value: backtestState.result.profit_factor?.toFixed(2) },
+                  { label: 'Win Rate', value: `${((backtestState.result.win_rate ?? 0) * 100).toFixed(1)}%` },
+                  { label: 'Trades', value: String(backtestState.result.total_trades ?? 0) },
+                ].map(m => (
+                  <div key={m.label} className="rounded-lg bg-panel px-3 py-2">
+                    <div className="font-mono text-[9px] uppercase tracking-wider text-muted">{m.label}</div>
+                    <div className="font-mono text-sm font-semibold text-text">{m.value}</div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => { setBacktestState({ phase: 'idle' }); setProgress(0); setElapsed(0); }}
+                className="font-mono text-[9px] uppercase tracking-wider text-muted hover:text-text transition-colors"
+              >
+                Run another
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {openHelp && STRATEGY_DESCRIPTIONS[openHelp.name] && (
         <StrategyHelp
