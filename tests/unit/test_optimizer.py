@@ -206,3 +206,58 @@ class TestEdgeCases:
         result = opt.optimize(strategies)
         total = sum(a.weight for a in result.allocations)
         assert total == pytest.approx(1.0, abs=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Sharpe correctness (CRIT-03 regression)
+# ---------------------------------------------------------------------------
+
+class TestSharpeCorrectness:
+    """Verify that covariance is not double-annualized and Sharpe is consistent."""
+
+    def test_sharpe_equals_return_over_vol(self):
+        """portfolio_sharpe must equal portfolio_expected_return / portfolio_volatility."""
+        opt = MultiStrategyOptimizer()
+        result = opt.optimize({
+            "a": _random_returns(0.001, 0.010, n=500, seed=1),
+            "b": _random_returns(0.0005, 0.015, n=500, seed=2),
+        })
+        assert result.portfolio_volatility > 0
+        assert result.portfolio_sharpe == pytest.approx(
+            result.portfolio_expected_return / result.portfolio_volatility, abs=1e-4
+        )
+
+    def test_portfolio_vol_is_annualized_not_daily(self):
+        """With daily std ~1%, annualized vol should be ~10–25%, not ~1%."""
+        import numpy as np
+        rng = np.random.default_rng(42)
+        # daily std ≈ 0.01 → annualized vol ≈ 0.01 * sqrt(252) ≈ 15.9%
+        returns = list(rng.normal(0.001, 0.01, 500))
+        opt = MultiStrategyOptimizer()
+        result = opt.optimize({"a": returns})
+        assert result.portfolio_volatility > 0.08   # well above daily range
+        assert result.portfolio_volatility < 0.35   # below implausibly high range
+
+    def test_known_two_strategy_sharpe(self):
+        """Known deterministic inputs should produce the correct annual Sharpe."""
+        import numpy as np
+        _ANNUALIZATION_FACTOR = 252
+
+        rng = np.random.default_rng(0)
+        ret_a = list(rng.normal(0.001, 0.01, 1000))
+        ret_b = list(rng.normal(0.0008, 0.012, 1000))
+
+        opt = MultiStrategyOptimizer()
+        result = opt.optimize({"a": ret_a, "b": ret_b})
+
+        # Independently compute expected stats for the returned weights
+        weights = {a.strategy_name: a.weight for a in result.allocations}
+        w = np.array([weights["a"], weights["b"]])
+        matrix = np.array([ret_a, ret_b]).T
+        mu = np.mean(matrix, axis=0) * _ANNUALIZATION_FACTOR
+        cov = np.cov(matrix, rowvar=False)  # daily cov
+        port_return = float(np.dot(w, mu))
+        port_vol = float(np.sqrt(np.dot(w, np.dot(cov, w))) * np.sqrt(_ANNUALIZATION_FACTOR))
+        expected_sharpe = port_return / port_vol if port_vol > 0 else 0.0
+
+        assert result.portfolio_sharpe == pytest.approx(expected_sharpe, abs=1e-4)
