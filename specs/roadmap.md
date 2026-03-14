@@ -25,6 +25,10 @@ AI-driven automated stock trading system for a retail investor managing US equit
 | 8 | React web dashboard: portfolio overview, strategy performance, risk dashboard, trade approval UI | Done |
 | 9 | InsiderFollowing strategy: SEC Form 4 cluster-buy detection, 21-day hold, net-selling exit | Done |
 | 10 | Backtest dashboard page: equity curve, trade log, stats grid, strategy selector | Done |
+| 11 | `POST /api/strategies/backtest` non-blocking endpoint: ThreadPoolExecutor background job, Redis job tracking (`backtest:job:{uuid}`), async OHLCV load via `asyncio.gather`, 1h TTL, `estimated_seconds` via rolling `ms_per_symbol` calibration | Done |
+| 12 | `GET /api/strategies/backtest/jobs/{id}` polling endpoint: returns job status (running/complete/failed) + result from Redis | Done |
+| 13 | Equal-weight position sizing in `SignalStrategy`: fixed `initial_capital / max_positions` per slot, capacity cap skips signals when at `max_positions`, reads limit from `risk_limits.yaml` in production | Done |
+| 14 | Run Backtest panel on Strategies page: form (strategy/symbols/dates/capital), artificial time-based progress bar driven by `ms_per_symbol` rolling average, 8-metric results card, polling via `backtestJob` API method | Done |
 
 **Exit criteria:** Paper trading 30+ days, risk limits enforced, Sharpe > 1.0 in backtest, web dashboard operational. Mode: `PAPER_ONLY`
 

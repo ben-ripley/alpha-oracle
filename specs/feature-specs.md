@@ -25,6 +25,10 @@
   - **ValueFactor**: Ranks stocks by composite value score, rebalance weekly/monthly
   - **InsiderFollowing**: Buys stocks with significant insider purchases (hold weeks-months)
   - No intraday or day-trading strategies (PDT constraint)
+- **Backtest API** (`POST /api/strategies/backtest`): non-blocking background job via `ThreadPoolExecutor(max_workers=2)`; handler loads OHLCV with `asyncio.gather`, writes `backtest:job:{uuid}` to Redis (1h TTL), returns `{job_id, status, estimated_seconds}` immediately
+- **Job polling** (`GET /api/strategies/backtest/jobs/{id}`): reads Redis key, returns status (`running` / `complete` / `failed`) + full `BacktestResult` on completion; registered before wildcard routes to prevent shadowing
+- **Timing calibration**: Redis key `backtest:timing:ms_per_symbol` stores rolling average (weight 10%: `new = (old * 9 + sample) / 10`); fallback 50 ms/symbol; persists indefinitely so estimates improve with real runs
+- **Equal-weight position sizing**: `SignalStrategy` allocates `initial_capital / max_positions` per slot; capacity cap skips buy signals when `len(_entry_bars) >= max_positions`; `max_positions` sourced from `risk_limits.yaml` (`portfolio_limits.max_positions`) or injected via `BacktraderEngine(max_positions=N)` constructor for testing
 
 ## F-003: Signal Generation (ML) — Phase 2
 - Feature engineering pipeline (scikit-learn): 50+ technical indicators, fundamental ratios, cross-asset, alternative data, temporal features
@@ -65,7 +69,7 @@
 
 ## F-008: Web Dashboard (React)
 - **Portfolio page:** Current positions, P&L (realized/unrealized), allocation chart, account value over time
-- **Strategies page:** Strategy list with backtest results, ranking scores, live vs backtest performance comparison
+- **Strategies page:** Strategy list with backtest results, ranking scores, live vs backtest performance comparison; **Run Backtest panel** with form (strategy selector, comma-separated symbols, start/end dates, initial capital), artificial time-based progress bar (advances via elapsed ms vs `estimated_seconds * 1000`, capped at 95% until job completes), 8-metric results card (Total Return, Annual Return, Sharpe, Sortino, Max DD, Profit Factor, Win Rate, Trades), "Run another" reset
 - **Backtest page:** Run backtests, visualize equity curves, compare strategies, parameter optimization results
 - **Risk page:** Drawdown chart, limit utilization bars, circuit breaker status, PDT trade counter (X/3 used)
 - **Trades page:** Trade history, pending approvals (in MANUAL_APPROVAL mode), execution quality metrics
