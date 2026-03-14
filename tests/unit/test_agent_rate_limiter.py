@@ -14,8 +14,7 @@ from src.agents.rate_limiter import AgentRateLimiter
 
 def _make_redis(count: int = 1):
     redis = AsyncMock()
-    redis.incr = AsyncMock(return_value=count)
-    redis.expire = AsyncMock()
+    redis.eval = AsyncMock(return_value=count)
     redis.get = AsyncMock(return_value=str(count))
     return redis
 
@@ -53,26 +52,17 @@ class TestCheckRateLimit:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_first_request_sets_expiry(self):
+    async def test_eval_called_with_key_and_ttl(self):
         redis = _make_redis(count=1)
         limiter = AgentRateLimiter(redis_client=redis)
 
         await limiter.check_rate_limit("analyses", 10)
 
-        redis.expire.assert_called_once()
-        key, ttl = redis.expire.call_args[0]
-        assert "analyses" in key
-        assert ttl == 7200
-
-    @pytest.mark.asyncio
-    async def test_subsequent_requests_do_not_reset_expiry(self):
-        redis = _make_redis(count=5)
-        limiter = AgentRateLimiter(redis_client=redis)
-
-        await limiter.check_rate_limit("analyses", 10)
-
-        # expire should NOT be called when count > 1
-        redis.expire.assert_not_called()
+        redis.eval.assert_called_once()
+        args = redis.eval.call_args[0]
+        # args: (lua_script, num_keys, key, ttl)
+        assert "analyses" in args[2]
+        assert args[3] == 7200
 
     @pytest.mark.asyncio
     async def test_different_endpoints_have_independent_limits(self):
@@ -100,7 +90,8 @@ class TestCheckRateLimit:
 
         await limiter.check_rate_limit("my_endpoint", 100)
 
-        key_used = redis.incr.call_args[0][0]
+        # eval args: (lua_script, num_keys, key, ttl)
+        key_used = redis.eval.call_args[0][2]
         assert "my_endpoint" in key_used
 
     @pytest.mark.asyncio

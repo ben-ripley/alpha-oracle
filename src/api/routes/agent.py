@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.api.dependencies import get_analyst_agent, get_advisor_agent, get_briefing_agent
 
@@ -37,9 +37,9 @@ async def _check_rate_limit(endpoint: str, limit: int) -> None:
 # ---------------------------------------------------------------------------
 
 class AnalyzeFilingRequest(BaseModel):
-    symbol: str
-    filing_text: str
-    filing_type: str = "FILING_10K"
+    symbol: str = Field(..., min_length=1, max_length=10)
+    filing_text: str = Field(..., min_length=1, max_length=500_000)
+    filing_type: str = Field("FILING_10K", min_length=1, max_length=30)
 
 
 @router.post("/analyze-filing")
@@ -210,7 +210,10 @@ async def approve_recommendation(recommendation_id: str):
         raise HTTPException(status_code=500, detail="Failed to deserialize recommendation")
 
     rec.human_approved = True
-    await redis.set(key, rec.model_dump_json(), keepttl=True)
+    ttl = await redis.ttl(key)
+    if ttl <= 0:
+        raise HTTPException(status_code=410, detail="Recommendation expired before update")
+    await redis.set(key, rec.model_dump_json(), ex=ttl)
 
     # Publish approval event
     await redis.publish("agent:recommendation", json.dumps({
@@ -245,7 +248,10 @@ async def reject_recommendation(recommendation_id: str):
         raise HTTPException(status_code=500, detail="Failed to deserialize recommendation")
 
     rec.human_approved = False
-    await redis.set(key, rec.model_dump_json(), keepttl=True)
+    ttl = await redis.ttl(key)
+    if ttl <= 0:
+        raise HTTPException(status_code=410, detail="Recommendation expired before update")
+    await redis.set(key, rec.model_dump_json(), ex=ttl)
 
     await redis.publish("agent:recommendation", json.dumps({
         "event": "rejected",
@@ -267,15 +273,14 @@ async def get_latest_briefing():
 
     from src.core.models import DailyBriefing
     from src.core.redis import get_redis
-    from datetime import date
+    from datetime import datetime, timedelta, timezone
 
     redis = await get_redis()
-    today = date.today().isoformat()
+    utc_today = datetime.now(timezone.utc).date()
 
     # Try today first, then previous days (up to 7)
     for days_ago in range(7):
-        from datetime import timedelta
-        check_date = (date.today() - timedelta(days=days_ago)).isoformat()
+        check_date = (utc_today - timedelta(days=days_ago)).isoformat()
         data = await redis.get(f"agent:briefings:{check_date}")
         if data:
             try:
@@ -295,13 +300,14 @@ async def get_briefing_history(limit: int = 7):
 
     from src.core.models import DailyBriefing
     from src.core.redis import get_redis
-    from datetime import date, timedelta
+    from datetime import datetime, timedelta, timezone
 
     redis = await get_redis()
     briefings = []
+    utc_today = datetime.now(timezone.utc).date()
 
     for days_ago in range(limit):
-        check_date = (date.today() - timedelta(days=days_ago)).isoformat()
+        check_date = (utc_today - timedelta(days=days_ago)).isoformat()
         data = await redis.get(f"agent:briefings:{check_date}")
         if data:
             try:

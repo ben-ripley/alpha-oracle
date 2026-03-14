@@ -30,19 +30,25 @@ class AgentRateLimiter:
         window = int(time.time()) // 3600
         return f"agent:ratelimit:{endpoint}:{window}"
 
+    # Lua script: atomically increment and set expiry on first create
+    _INCR_WITH_EXPIRE_LUA = """
+    local count = redis.call('INCR', KEYS[1])
+    if count == 1 then
+        redis.call('EXPIRE', KEYS[1], ARGV[1])
+    end
+    return count
+    """
+
     async def check_rate_limit(self, endpoint: str, limit_per_hour: int) -> bool:
         """Return True if the request is within the rate limit, False if exceeded.
 
-        Increments the counter atomically. The key expires after 2 hours to
-        avoid stale accumulation across window boundaries.
+        Increments the counter atomically via Lua script. The key expires after
+        2 hours to avoid stale accumulation across window boundaries.
         """
         redis = await self._get_redis()
         key = self._window_key(endpoint)
 
-        count = await redis.incr(key)
-        if count == 1:
-            # First request in this window — set expiry
-            await redis.expire(key, 7200)
+        count = await redis.eval(self._INCR_WITH_EXPIRE_LUA, 1, key, 7200)
 
         if count > limit_per_hour:
             logger.warning(

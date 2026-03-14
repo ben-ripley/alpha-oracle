@@ -109,8 +109,8 @@ class RegimeDetector:
             return MarketRegime.HIGH_VOLATILITY, round(prob, 3)
 
         # Rule 2: BEAR — death cross or extreme VIX
-        if (current_price < ma50 < ma200) or current_vix > _VIX_BEAR:
-            if current_price < ma50 < ma200:
+        if (ma50 > 0 and current_price < ma50 < ma200) or current_vix > _VIX_BEAR:
+            if ma50 > 0 and current_price < ma50 < ma200:
                 # Confidence based on % below MA50
                 gap = (ma50 - current_price) / ma50
                 prob = min(1.0, 0.6 + gap * 5)
@@ -119,7 +119,7 @@ class RegimeDetector:
             return MarketRegime.BEAR, round(prob, 3)
 
         # Rule 3: BULL — golden cross with low VIX
-        if current_price > ma50 > ma200 and current_vix < _VIX_BULL_MAX:
+        if ma50 > 0 and current_price > ma50 > ma200 and current_vix < _VIX_BULL_MAX:
             gap = (current_price - ma50) / ma50
             prob = min(1.0, 0.6 + gap * 5)
             return MarketRegime.BULL, round(prob, 3)
