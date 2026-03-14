@@ -7,6 +7,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
+import structlog
 import redis as redis_sync
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -18,6 +19,7 @@ from src.core.redis import get_redis
 from src.strategy.backtest.backtrader_engine import BacktraderEngine
 
 router = APIRouter()
+logger = structlog.get_logger()
 
 _BACKTEST_EXECUTOR = ThreadPoolExecutor(max_workers=2)
 _TIMING_KEY = "backtest:timing:ms_per_symbol"
@@ -141,7 +143,7 @@ async def run_backtest(request: BacktestRequest):
                    f"Available: {engine.list_strategies()}",
         )
 
-    start = datetime.fromisoformat(request.start_date)
+    start = datetime.fromisoformat(request.start_date).replace(tzinfo=timezone.utc)
     end = (
         datetime.fromisoformat(request.end_date)
         if request.end_date
@@ -183,7 +185,7 @@ async def run_backtest(request: BacktestRequest):
 
     settings = get_settings()
     loop = asyncio.get_running_loop()
-    loop.run_in_executor(
+    future = loop.run_in_executor(
         _BACKTEST_EXECUTOR,
         _run_backtest_thread,
         job_key,
@@ -193,6 +195,11 @@ async def run_backtest(request: BacktestRequest):
         start,
         end,
         settings.redis.url,
+    )
+    future.add_done_callback(
+        lambda f: f.exception() and logger.error(
+            "backtest executor raised unhandled exception", exc_info=f.exception()
+        )
     )
 
     return {"job_id": job_id, "status": "running", "estimated_seconds": estimated_seconds}
@@ -232,6 +239,16 @@ async def get_backtest_results(
     except Exception:
         results = []
     return {"results": results[:limit]}
+
+
+@router.get("/backtest/jobs/{job_id}")
+async def get_backtest_job(job_id: str):
+    """Poll backtest job status. Returns status + result when complete."""
+    redis = await get_redis()
+    raw = await redis.get(f"backtest:job:{job_id}")
+    if not raw:
+        raise HTTPException(status_code=404, detail="Job not found or expired")
+    return json.loads(raw)
 
 
 @router.get("/ml/signals")
@@ -309,16 +326,6 @@ async def get_ml_monitoring():
         "max_psi": 0.28,
         "fallback_active": False,
     }
-
-
-@router.get("/backtest/jobs/{job_id}")
-async def get_backtest_job(job_id: str):
-    """Poll backtest job status. Returns status + result when complete."""
-    redis = await get_redis()
-    raw = await redis.get(f"backtest:job:{job_id}")
-    if not raw:
-        raise HTTPException(status_code=404, detail="Job not found or expired")
-    return json.loads(raw)
 
 
 @router.get("/{strategy_name}/performance")

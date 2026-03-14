@@ -58,7 +58,7 @@ class TestRunBacktestThread:
 
             _run_backtest_thread(
                 job_key="backtest:job:test-123",
-                strategy=MagicMock(name="SwingMomentum", min_hold_days=2),
+                strategy=MagicMock(min_hold_days=2),
                 bars={"AAPL": [], "MSFT": []},
                 initial_capital=20000.0,
                 start=datetime(2024, 1, 1, tzinfo=timezone.utc),
@@ -190,7 +190,7 @@ class TestRunBacktestEndpoint:
              patch("src.api.routes.strategies.get_settings") as mock_settings:
 
             mock_settings.return_value.redis.url = "redis://localhost:6379/0"
-            mock_loop.return_value.run_in_executor = MagicMock(return_value=None)
+            mock_loop.return_value.run_in_executor = MagicMock(return_value=MagicMock())
 
             request = BacktestRequest(
                 strategy_name="SwingMomentum",
@@ -268,7 +268,7 @@ class TestRunBacktestEndpoint:
              patch("src.api.routes.strategies.get_settings") as mock_settings:
 
             mock_settings.return_value.redis.url = "redis://localhost:6379/0"
-            mock_loop.return_value.run_in_executor = MagicMock()
+            mock_loop.return_value.run_in_executor = MagicMock(return_value=MagicMock())
 
             result = await run_backtest(BacktestRequest(
                 strategy_name="SwingMomentum",
