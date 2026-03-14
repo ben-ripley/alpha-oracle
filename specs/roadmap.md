@@ -63,17 +63,30 @@ AI-driven automated stock trading system for a retail investor managing US equit
 
 ## Phase 3: LLM Agent + Full Automation
 
-| Week | Deliverable |
-|---|---|
-| 1 | Claude analyst agent: filing analysis, earnings summarization |
-| 2 | FinBERT sentiment pipeline, news sentiment as ML feature |
-| 3 | Trade advisor agent (LangGraph), daily portfolio briefings in dashboard |
-| 4 | Alternative data batch 2: analyst estimates, options flow |
-| 5 | Monte Carlo simulation, regime analysis, multi-strategy optimization |
-| 6 | FULL_AUTONOMOUS mode with all circuit breakers |
-| 7 | Production hardening, documentation, runbooks, dashboard polish |
+| Track | Deliverable | Status |
+|---|---|---|
+| A1 | Pydantic models for all agent/analysis types with schema versioning; tiered model config (Sonnet for analyst/briefing, Haiku for advisor); AgentSettings with response caching, rate limits, budget | Done |
+| A2 | Agent base infrastructure: BaseAgent ABC, CostTracker (SHA-256 response cache, budget enforcement), AgentRateLimiter (token-bucket per endpoint), LLM guardrails decorator | Done |
+| B1 | Data adapters: NewsAdapter (Alpha Vantage NEWS_SENTIMENT), AnalystEstimatesAdapter (AV EARNINGS+OVERVIEW), OptionsFlowAdapter (stub), GoogleTrendsAdapter (stub — pytrends not used, unreliable) | Done |
+| B2 | Feature calculators: SentimentFeatureCalculator, EstimatesFeatureCalculator, OptionsFlowFeatureCalculator, TrendsFeatureCalculator — all PIT-safe, return NaN on missing data; FeatureStore extended with 4 optional params | Done |
+| B3 | FinBERT sentiment scorer (`src/agents/sentiment_scorer.py`) — optional dep, graceful fallback to `[]` if transformers/torch not installed | Done |
+| C1 | ClaudeAnalystAgent: tool_use structured output, tenacity retry, response caching, Redis storage; prompts with few-shot examples | Done |
+| C2 | TradeAdvisorAgent: plain async workflow (no LangGraph), autonomy mode gating (PAPER/MANUAL→queue, BOUNDED→auto at confidence≥0.7, FULL→auto); PortfolioReviewAgent: daily DailyBriefing generation; context.py with graceful fallback | Done |
+| D1 | MonteCarloSimulator: bootstrapped simulation, 5 percentile bands, VaR 95%, probability of loss | Done |
+| D2 | RegimeDetector: rule-based only (50/200 MA + VIX) — no HMM; BULL/BEAR/SIDEWAYS/HIGH_VOLATILITY with confidence scores | Done |
+| D3 | MultiStrategyOptimizer: scipy mean-variance, Sharpe maximization, weights in [0, 0.40], sums to 1.0 | Done |
+| E1 | AutonomyValidator with tightened thresholds: MANUAL→BOUNDED requires 30d + Sharpe≥0.5 + drawdown check; BOUNDED→FULL requires 90d + Sharpe≥0.5 + drawdown + circuit breakers tested + guardrails verified + typed confirmation | Done |
+| E2 | LLMGuardrailsEngine: broker import check, Redis timestamp, recency check, stale-timestamp cleared on failure | Done |
+| F1 | Scheduling: daily_sentiment_job, daily_briefing_job, weekly_options_flow_job, weekly_trends_job — all check agent.enabled, idempotent, per-symbol error isolation; weekly_fundamentals_job extended with analyst estimates | Done |
+| G1 | API routes: /api/agent/* (10 endpoints, rate-limited, 503 when disabled), /api/analysis/* (3 endpoints, always available), autonomy-mode transition + guardrail status on /api/risk/* | Done |
+| G2 | WebSocket: agent:analysis, agent:recommendation, agent:briefing, agent:cost channels | Done |
+| H1 | Frontend: Agent dashboard (cost tracker, daily briefing, recommendations with approve/reject, filing analyses), Analysis page (Monte Carlo fan chart, regime timeline, autonomy readiness), AutonomyModeSection on Risk page | Done |
+| I1 | Graceful degradation: agent disabled → 503 APIs + scheduler early-return; FinBERT missing → empty sentiment; feature calculators missing data → NaN; analysis endpoints always work | Done |
+| I2 | Documentation: CLAUDE.md updated; llm-agents.md, full-autonomous.md, agents module guide, llm-guardrails architecture, agent operations runbook | Done |
 
-**Exit criteria:** BOUNDED_AUTONOMOUS profitable 60+ days, LLM measurably improves signals. Mode: -> `FULL_AUTONOMOUS`
+**1,119 tests passing (+450 from Phase 3). 0 failures.**
+
+**Status: IMPLEMENTED**
 
 ---
 

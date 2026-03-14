@@ -8,16 +8,24 @@ from pathlib import Path
 import pandas as pd
 
 from src.core.models import (
+    AnalystEstimate,
     FundamentalData,
     InsiderTransaction,
     OHLCV,
+    OptionsFlowRecord,
+    SentimentScore,
     ShortInterestData,
+    TrendsData,
 )
 from src.signals.features.alternative import AlternativeFeatureCalculator
 from src.signals.features.cross_asset import CrossAssetFeatureCalculator
+from src.signals.features.estimates import EstimatesFeatureCalculator
 from src.signals.features.fundamental import FundamentalFeatureCalculator
+from src.signals.features.options_flow import OptionsFlowFeatureCalculator
+from src.signals.features.sentiment import SentimentFeatureCalculator
 from src.signals.features.technical import TechnicalFeatureCalculator
 from src.signals.features.temporal import TemporalFeatureCalculator
+from src.signals.features.trends import TrendsFeatureCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +49,10 @@ class FeatureStore:
         self._cross_asset = CrossAssetFeatureCalculator()
         self._alternative = AlternativeFeatureCalculator()
         self._temporal = TemporalFeatureCalculator()
+        self._sentiment = SentimentFeatureCalculator()
+        self._estimates = EstimatesFeatureCalculator()
+        self._options_flow = OptionsFlowFeatureCalculator()
+        self._trends = TrendsFeatureCalculator()
 
     def _cache_path(self, symbol: str) -> Path:
         ext = ".parquet" if self._has_pyarrow else ".pkl"
@@ -57,6 +69,10 @@ class FeatureStore:
         sector_fundamentals: list[FundamentalData] | None = None,
         insider_transactions: list[InsiderTransaction] | None = None,
         short_interest: list[ShortInterestData] | None = None,
+        sentiment_scores: list[SentimentScore] | None = None,
+        analyst_estimates: list[AnalystEstimate] | None = None,
+        options_flow: list[OptionsFlowRecord] | None = None,
+        trends_data: list[TrendsData] | None = None,
     ) -> pd.DataFrame:
         """Compute all features for a single symbol with point-in-time safety.
 
@@ -88,9 +104,15 @@ class FeatureStore:
         # 5. Temporal features
         temp_df = self._temporal.compute(bar_dates)
 
-        # 6. Left-join all on date index
+        # 6. Phase 3: sentiment, estimates, options flow, trends
+        sent_df = self._sentiment.compute(sentiment_scores, bar_dates)
+        est_df = self._estimates.compute(analyst_estimates, bar_dates)
+        opts_df = self._options_flow.compute(options_flow, bar_dates)
+        trend_df = self._trends.compute(trends_data, bar_dates)
+
+        # 7. Left-join all on date index
         result = tech_df.copy()
-        for df in (fund_df, cross_df, alt_df, temp_df):
+        for df in (fund_df, cross_df, alt_df, temp_df, sent_df, est_df, opts_df, trend_df):
             if df is not None and not df.empty:
                 # Align indices: reindex to tech_df's index
                 aligned = df.reindex(result.index)

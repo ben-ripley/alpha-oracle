@@ -7,7 +7,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import portfolio, strategies, risk, trades, system, websocket
+from src.api.routes import portfolio, strategies, risk, trades, system, websocket, agent, analysis
 from src.core.config import get_settings
 from src.core.redis import close_redis
 
@@ -128,6 +128,8 @@ app.include_router(risk.router, prefix="/api/risk", tags=["risk"])
 app.include_router(trades.router, prefix="/api/trades", tags=["trades"])
 app.include_router(system.router, prefix="/api/system", tags=["system"])
 app.include_router(websocket.router, tags=["websocket"])
+app.include_router(agent.router, prefix="/api/agent", tags=["agent"])
+app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
 
 
 @app.get("/health")

@@ -189,6 +189,7 @@ class PortfolioSnapshot(BaseModel):
     max_drawdown_pct: float = 0.0
     positions: list[Position] = Field(default_factory=list)
     sector_exposure: dict[str, float] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class TradeRecord(BaseModel):
@@ -255,3 +256,148 @@ class ExecutionQualityMetrics(BaseModel):
     signal_timestamp: datetime | None = None
     fill_timestamp: datetime | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# --- Phase 3: LLM Agent Models ---
+
+class AgentAnalysisType(str, Enum):
+    FILING_10K = "FILING_10K"
+    FILING_10Q = "FILING_10Q"
+    FILING_8K = "FILING_8K"
+    EARNINGS_SUMMARY = "EARNINGS_SUMMARY"
+
+
+class AgentAnalysis(BaseModel):
+    symbol: str
+    analysis_type: AgentAnalysisType
+    summary: str
+    key_points: list[str] = Field(default_factory=list)
+    sentiment_score: float = 0.0
+    risk_flags: list[str] = Field(default_factory=list)
+    financial_highlights: dict[str, Any] = Field(default_factory=dict)
+    tokens_used: int = 0
+    cost_usd: float = 0.0
+    model_name: str = ""
+    schema_version: int = 1
+
+
+class LLMUsageRecord(BaseModel):
+    agent_name: str
+    model_name: str
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float
+    task_type: str
+
+
+class RecommendationAction(str, Enum):
+    BUY = "BUY"
+    SELL = "SELL"
+    HOLD = "HOLD"
+
+
+class TradeRecommendation(BaseModel):
+    symbol: str
+    action: RecommendationAction
+    confidence: float = Field(ge=0.0, le=1.0)
+    rationale: str
+    supporting_signals: list[str] = Field(default_factory=list)
+    risk_factors: list[str] = Field(default_factory=list)
+    suggested_entry: float | None = None
+    suggested_stop: float | None = None
+    suggested_target: float | None = None
+    human_approved: bool | None = None
+    schema_version: int = 1
+
+
+class DailyBriefing(BaseModel):
+    date: datetime
+    portfolio_summary: str
+    daily_pnl: float
+    risk_utilization: float
+    upcoming_catalysts: list[str] = Field(default_factory=list)
+    suggested_exits: list[str] = Field(default_factory=list)
+    market_regime: str
+    key_observations: list[str] = Field(default_factory=list)
+    schema_version: int = 1
+
+
+class SentimentScore(BaseModel):
+    symbol: str
+    timestamp: datetime
+    source: str
+    text_snippet: str
+    sentiment: float = Field(ge=-1.0, le=1.0)
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class NewsArticle(BaseModel):
+    symbol: str
+    title: str
+    source: str
+    published_at: datetime
+    url: str
+    summary: str
+    sentiment: float
+
+
+class AnalystEstimate(BaseModel):
+    symbol: str
+    fiscal_date_ending: str
+    consensus_estimate: float
+    actual: float | None = None
+    surprise_pct: float | None = None
+    num_analysts: int
+
+
+class OptionsFlowRecord(BaseModel):
+    symbol: str
+    timestamp: datetime
+    put_volume: int
+    call_volume: int
+    put_call_ratio: float
+    unusual_activity: bool
+
+
+class TrendsData(BaseModel):
+    symbol: str
+    keyword: str
+    timestamp: datetime
+    interest_over_time: float
+
+
+class MonteCarloResult(BaseModel):
+    num_simulations: int
+    time_horizon_days: int
+    percentiles: dict[str, list[float]] = Field(default_factory=dict)
+    probability_of_loss: float
+    value_at_risk_95: float
+    simulation_paths: list[list[float]] = Field(default_factory=list)
+
+
+class MarketRegime(str, Enum):
+    BULL = "BULL"
+    BEAR = "BEAR"
+    SIDEWAYS = "SIDEWAYS"
+    HIGH_VOLATILITY = "HIGH_VOLATILITY"
+
+
+class RegimeAnalysis(BaseModel):
+    current_regime: MarketRegime
+    regime_probability: float
+    strategy_performance_by_regime: dict[str, dict] = Field(default_factory=dict)
+    regime_history: list[dict] = Field(default_factory=list)
+
+
+class StrategyAllocation(BaseModel):
+    strategy_name: str
+    weight: float
+    expected_return: float
+    contribution_to_risk: float
+
+
+class OptimizationResult(BaseModel):
+    allocations: list[StrategyAllocation] = Field(default_factory=list)
+    portfolio_sharpe: float
+    portfolio_expected_return: float
+    portfolio_volatility: float

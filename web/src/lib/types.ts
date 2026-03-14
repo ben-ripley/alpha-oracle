@@ -139,3 +139,110 @@ export interface WSMessage {
   channel: string;
   data: Record<string, unknown>;
 }
+
+// Phase 3: LLM Agent types
+
+export type AgentAnalysisType = 'FILING_10K' | 'FILING_10Q' | 'FILING_8K' | 'EARNINGS_SUMMARY';
+
+export interface AgentAnalysis {
+  id?: string;
+  symbol: string;
+  analysis_type: AgentAnalysisType;
+  summary: string;
+  key_points: string[];
+  sentiment_score: number;
+  risk_flags: string[];
+  financial_highlights: Record<string, unknown>;
+  tokens_used: number;
+  cost_usd: number;
+  model_name: string;
+  schema_version: number;
+  created_at?: string;
+}
+
+export type RecommendationAction = 'BUY' | 'SELL' | 'HOLD';
+
+export interface TradeRecommendation {
+  id?: string;
+  symbol: string;
+  action: RecommendationAction;
+  confidence: number;
+  rationale: string;
+  supporting_signals: string[];
+  risk_factors: string[];
+  suggested_entry: number | null;
+  suggested_stop: number | null;
+  suggested_target: number | null;
+  human_approved: boolean | null;
+  schema_version: number;
+  created_at?: string;
+}
+
+export interface DailyBriefing {
+  date: string;
+  portfolio_summary: string;
+  daily_pnl: number;
+  risk_utilization: Record<string, number>;
+  upcoming_catalysts: string[];
+  suggested_exits: string[];
+  market_regime: string;
+  key_observations: string[];
+  schema_version: number;
+}
+
+export interface LLMCostSummary {
+  daily_cost_usd: number;
+  daily_budget_usd: number;
+  monthly_cost_usd: number;
+  monthly_budget_usd: number;
+}
+
+export interface MonteCarloResult {
+  num_simulations: number;
+  time_horizon_days: number;
+  percentiles: {
+    p5: number[];
+    p25: number[];
+    p50: number[];
+    p75: number[];
+    p95: number[];
+  };
+  probability_of_loss: number;
+  value_at_risk_95: number;
+  simulation_paths: number[][];
+}
+
+export type MarketRegime = 'BULL' | 'BEAR' | 'SIDEWAYS' | 'HIGH_VOLATILITY';
+
+export interface RegimeAnalysis {
+  current_regime: MarketRegime;
+  regime_probability: number;
+  strategy_performance_by_regime: Record<string, unknown>;
+  regime_history: Array<{ day_index: number; regime: MarketRegime }>;
+}
+
+export interface StrategyAllocation {
+  strategy_name: string;
+  weight: number;
+  expected_return: number;
+  contribution_to_risk: number;
+}
+
+export interface OptimizationResult {
+  allocations: StrategyAllocation[];
+  portfolio_sharpe: number;
+  portfolio_expected_return: number;
+  portfolio_volatility: number;
+}
+
+export interface AutonomyReadiness {
+  current_mode: string;
+  readiness: Record<string, { approved: boolean; blocking_reasons: string[] }>;
+}
+
+export interface GuardrailStatus {
+  verified: boolean;
+  last_verified: string | null;
+  age_hours: number;
+  stale: boolean;
+}

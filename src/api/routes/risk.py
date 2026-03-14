@@ -1,11 +1,21 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from src.api.dependencies import get_risk_manager, get_broker
 from src.core.models import AutonomyMode
 
 router = APIRouter()
+
+
+class TransitionRequest(BaseModel):
+    target_mode: str
+    days_in_mode: int = 0
+    sharpe: float = 0.0
+    max_drawdown_pct: float = 0.0
+    circuit_breakers_tested: bool = False
+    confirmation: str = ""
 
 
 @router.get("/dashboard")
@@ -108,3 +118,113 @@ async def get_kill_switch_status():
     risk_mgr = await get_risk_manager()
     active = await risk_mgr.is_kill_switch_active()
     return {"active": active}
+
+
+@router.get("/autonomy-mode/readiness")
+async def get_autonomy_mode_readiness():
+    """Check readiness for each possible autonomy mode transition."""
+    from src.risk.autonomy_validator import AutonomyValidator
+    from src.core.config import get_settings
+
+    risk_mgr = await get_risk_manager()
+    current_mode_str = risk_mgr.settings.autonomy_mode
+    try:
+        current_mode = AutonomyMode(current_mode_str)
+    except ValueError:
+        current_mode = AutonomyMode.PAPER_ONLY
+
+    validator = AutonomyValidator()
+    readiness = {}
+
+    for mode in AutonomyMode:
+        approved, reasons = validator.validate_transition(
+            current_mode, mode, portfolio_metrics={}
+        )
+        readiness[mode.value] = {"approved": approved, "blocking_reasons": reasons}
+
+    return {
+        "current_mode": current_mode.value,
+        "readiness": readiness,
+    }
+
+
+@router.post("/autonomy-mode/transition")
+async def transition_autonomy_mode(request: TransitionRequest):
+    """Attempt to transition the system to a new autonomy mode.
+
+    Validates all preconditions via AutonomyValidator. For FULL_AUTONOMOUS,
+    the request body must include confirmation='FULL_AUTONOMOUS'.
+    """
+    from src.risk.autonomy_validator import AutonomyValidator
+
+    risk_mgr = await get_risk_manager()
+    current_mode_str = risk_mgr.settings.autonomy_mode
+    try:
+        current_mode = AutonomyMode(current_mode_str)
+    except ValueError:
+        current_mode = AutonomyMode.PAPER_ONLY
+
+    try:
+        target_mode = AutonomyMode(request.target_mode)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown autonomy mode '{request.target_mode}'. "
+                   f"Valid values: {[m.value for m in AutonomyMode]}",
+        )
+
+    if target_mode == AutonomyMode.FULL_AUTONOMOUS and request.confirmation != "FULL_AUTONOMOUS":
+        raise HTTPException(
+            status_code=400,
+            detail="Transitioning to FULL_AUTONOMOUS requires confirmation='FULL_AUTONOMOUS' in request body.",
+        )
+
+    portfolio_metrics = {
+        "days_in_mode": request.days_in_mode,
+        "sharpe": request.sharpe,
+        "max_drawdown_pct": request.max_drawdown_pct,
+        "circuit_breakers_tested": request.circuit_breakers_tested,
+    }
+
+    validator = AutonomyValidator()
+    approved, reasons = validator.validate_transition(current_mode, target_mode, portfolio_metrics)
+
+    if not approved:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "Transition not approved", "blocking_reasons": reasons},
+        )
+
+    if hasattr(risk_mgr, "transition_autonomy_mode"):
+        await risk_mgr.transition_autonomy_mode(target_mode)
+
+    return {
+        "status": "transitioned",
+        "from_mode": current_mode.value,
+        "to_mode": target_mode.value,
+    }
+
+
+@router.get("/guardrails/status")
+async def get_guardrails_status():
+    """Get LLM guardrail verification status."""
+    from src.agents.guardrails import LLMGuardrailsChecker
+
+    checker = LLMGuardrailsChecker()
+    last_verified = await checker.get_last_verified()
+
+    if last_verified is None:
+        return {"verified": False, "last_verified": None, "message": "Guardrails never verified"}
+
+    from datetime import datetime, timezone
+    verified_at = datetime.fromisoformat(last_verified)
+    if verified_at.tzinfo is None:
+        verified_at = verified_at.replace(tzinfo=timezone.utc)
+    age_hours = (datetime.now(timezone.utc) - verified_at).total_seconds() / 3600
+
+    return {
+        "verified": age_hours <= 24.0,
+        "last_verified": last_verified,
+        "age_hours": round(age_hours, 2),
+        "stale": age_hours > 24.0,
+    }

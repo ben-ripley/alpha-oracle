@@ -7,6 +7,8 @@ import {
   Activity,
   BarChart2,
   BrainCircuit,
+  Bot,
+  TrendingUp,
 } from 'lucide-react';
 
 const links = [
@@ -16,6 +18,8 @@ const links = [
   { to: '/risk', icon: ShieldAlert, label: 'Risk' },
   { to: '/trades', icon: ArrowLeftRight, label: 'Trades' },
   { to: '/model-health', icon: BrainCircuit, label: 'Model Health' },
+  { to: '/agent', icon: Bot, label: 'Agent' },
+  { to: '/analysis', icon: TrendingUp, label: 'Analysis' },
 ];
 
 export function Sidebar() {

@@ -18,6 +18,9 @@ _risk_manager = None
 _execution_engine = None
 _strategy_engine = None
 _storage = None
+_analyst_agent = None
+_advisor_agent = None
+_briefing_agent = None
 
 
 async def get_broker() -> BrokerAdapter:
@@ -78,6 +81,30 @@ async def get_storage():
         from src.data.storage import TimeSeriesStorage
         _storage = TimeSeriesStorage()
     return _storage
+
+
+async def get_analyst_agent():
+    global _analyst_agent
+    if _analyst_agent is None:
+        from src.agents.analyst import ClaudeAnalystAgent
+        _analyst_agent = ClaudeAnalystAgent()
+    return _analyst_agent
+
+
+async def get_advisor_agent():
+    global _advisor_agent
+    if _advisor_agent is None:
+        from src.agents.advisor import TradeAdvisorAgent
+        _advisor_agent = TradeAdvisorAgent()
+    return _advisor_agent
+
+
+async def get_briefing_agent():
+    global _briefing_agent
+    if _briefing_agent is None:
+        from src.agents.briefing import PortfolioReviewAgent
+        _briefing_agent = PortfolioReviewAgent()
+    return _briefing_agent
 
 
 async def close_broker() -> None:

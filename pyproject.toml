@@ -47,6 +47,9 @@ dependencies = [
     # Broker
     "ib-async>=0.9.86",
 
+    # AI / Agents
+    "anthropic>=0.40",
+
     # Orchestration
     "apscheduler>=3.10,<4",
 

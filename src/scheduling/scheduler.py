@@ -26,6 +26,10 @@ class TradingScheduler:
             weekly_fundamentals_job,
             biweekly_altdata_job,
             weekly_retrain_job,
+            daily_sentiment_job,
+            daily_briefing_job,
+            weekly_options_flow_job,
+            weekly_trends_job,
         )
 
         if not self._settings.enabled:
@@ -58,6 +62,34 @@ class TradingScheduler:
             CronTrigger.from_crontab(self._settings.weekly_retrain_cron),
             id="weekly_retrain",
             name="Weekly Model Retrain",
+            replace_existing=True,
+        )
+        self._scheduler.add_job(
+            daily_sentiment_job,
+            CronTrigger.from_crontab(self._settings.daily_sentiment_cron),
+            id="daily_sentiment",
+            name="Daily Sentiment Scoring",
+            replace_existing=True,
+        )
+        self._scheduler.add_job(
+            daily_briefing_job,
+            CronTrigger.from_crontab(self._settings.daily_briefing_cron),
+            id="daily_briefing",
+            name="Daily Portfolio Briefing",
+            replace_existing=True,
+        )
+        self._scheduler.add_job(
+            weekly_options_flow_job,
+            CronTrigger.from_crontab(self._settings.biweekly_altdata_cron),
+            id="weekly_options_flow",
+            name="Weekly Options Flow Fetch",
+            replace_existing=True,
+        )
+        self._scheduler.add_job(
+            weekly_trends_job,
+            CronTrigger.from_crontab(self._settings.biweekly_altdata_cron),
+            id="weekly_trends",
+            name="Weekly Google Trends Fetch",
             replace_existing=True,
         )
 

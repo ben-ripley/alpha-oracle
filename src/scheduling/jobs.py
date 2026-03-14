@@ -123,6 +123,7 @@ async def weekly_fundamentals_job() -> None:
     try:
         from src.core.redis import get_redis
         from src.data.adapters.alpha_vantage_adapter import AlphaVantageAdapter
+        from src.data.adapters.analyst_estimates_adapter import AnalystEstimatesAdapter
         from src.data.storage import TimeSeriesStorage
         from src.data.universe import SymbolUniverse
 
@@ -134,6 +135,7 @@ async def weekly_fundamentals_job() -> None:
         done_key = f"jobs:weekly_fundamentals:{week_label}:done"
 
         av = AlphaVantageAdapter()
+        estimates_adapter = AnalystEstimatesAdapter()
         storage = TimeSeriesStorage()
 
         fetched = skipped = errors = 0
@@ -145,6 +147,9 @@ async def weekly_fundamentals_job() -> None:
                 fundamentals = await av.get_fundamentals(symbol)
                 if fundamentals:
                     await storage.store_fundamentals(fundamentals)
+                estimates = await estimates_adapter.get_estimates(symbol)
+                if estimates:
+                    await storage.store_analyst_estimates(estimates)
                 await redis.sadd(done_key, symbol)
                 await redis.expire(done_key, _FUNDAMENTALS_DONE_TTL)
                 fetched += 1
@@ -239,6 +244,236 @@ async def biweekly_altdata_job() -> None:
         )
     except Exception:
         logger.exception("job.biweekly_altdata.error")
+
+
+_SENTIMENT_DONE_TTL = 90_000   # ~25 hours
+_OPTIONS_DONE_TTL = 8 * 86_400
+_TRENDS_DONE_TTL = 8 * 86_400
+
+
+async def daily_sentiment_job() -> None:
+    """Fetch news and score sentiment with FinBERT for all universe symbols.
+
+    Idempotent: a done-key in Redis prevents re-processing within the same day.
+    Gracefully skips scoring if transformers/torch are not installed.
+    """
+    logger.info("job.daily_sentiment.start")
+    try:
+        from src.core.config import get_settings
+        settings = get_settings()
+        if not settings.agent.enabled:
+            logger.info("job.daily_sentiment.skipped", reason="agent.enabled=False")
+            return
+
+        from src.core.redis import get_redis
+        redis = await get_redis()
+        today = _now_et().date().isoformat()
+        done_key = f"jobs:daily_sentiment:{today}:done"
+        if await redis.exists(done_key):
+            logger.info("job.daily_sentiment.already_done", date=today)
+            return
+
+        from src.data.adapters.news_adapter import NewsAdapter
+        from src.agents.sentiment_scorer import FinBERTSentimentPipeline
+        from src.data.storage import TimeSeriesStorage
+        from src.data.universe import SymbolUniverse
+
+        universe = SymbolUniverse()
+        symbols = await universe.get_symbols()
+
+        news_adapter = NewsAdapter()
+        scorer = FinBERTSentimentPipeline()
+        storage = TimeSeriesStorage()
+        max_articles = settings.sentiment.max_articles_per_symbol
+
+        scored = skipped = errors = 0
+        for symbol in symbols:
+            try:
+                articles = await news_adapter.get_news(symbol, limit=max_articles)
+                if not articles:
+                    skipped += 1
+                    continue
+                texts = [a.summary or a.title for a in articles if a.summary or a.title]
+                sentiment_scores = await scorer.score_texts(symbol, texts, source="news")
+                if sentiment_scores:
+                    await storage.store_sentiment(sentiment_scores)
+                scored += 1
+            except Exception:
+                logger.warning("job.daily_sentiment.symbol_error", symbol=symbol, exc_info=True)
+                errors += 1
+
+        await redis.set(done_key, "1", ex=_SENTIMENT_DONE_TTL)
+        logger.info(
+            "job.daily_sentiment.complete",
+            symbols=len(symbols),
+            scored=scored,
+            skipped=skipped,
+            errors=errors,
+            date=today,
+        )
+    except Exception:
+        logger.exception("job.daily_sentiment.error")
+
+
+async def daily_briefing_job() -> None:
+    """Generate daily portfolio briefing via PortfolioReviewAgent.
+
+    Idempotent: skipped if a briefing for today already exists in Redis.
+    """
+    logger.info("job.daily_briefing.start")
+    try:
+        from src.core.config import get_settings
+        settings = get_settings()
+        if not settings.agent.enabled:
+            logger.info("job.daily_briefing.skipped", reason="agent.enabled=False")
+            return
+
+        from src.core.redis import get_redis
+        redis = await get_redis()
+        today = _now_et().date().isoformat()
+        done_key = f"agent:briefings:{today}"
+        if await redis.exists(done_key):
+            logger.info("job.daily_briefing.already_done", date=today)
+            return
+
+        from src.agents.briefing import PortfolioReviewAgent
+        from src.agents.base import AgentContext
+        from src.execution.broker_adapters.paper_stub import PaperStubBroker
+        from src.core.config import get_settings as _get_settings
+
+        broker_provider = _get_settings().broker.provider.lower()
+        if broker_provider == "ibkr":
+            from src.execution.broker_adapters.ibkr_adapter import IBKRBrokerAdapter
+            broker = IBKRBrokerAdapter(_get_settings())
+        elif broker_provider == "simulated":
+            from src.execution.broker_adapters.simulated_broker import SimulatedBroker
+            broker = SimulatedBroker()
+        else:
+            broker = PaperStubBroker()
+
+        portfolio = await broker.get_portfolio()
+        positions = list(portfolio.positions.values()) if hasattr(portfolio, "positions") else []
+
+        agent = PortfolioReviewAgent()
+        context = AgentContext(
+            data={
+                "portfolio": portfolio,
+                "positions": positions,
+                "recent_trades": [],
+                "market_data": {},
+                "date": today,
+            }
+        )
+        result = await agent.run(context)
+
+        if result.output is not None:
+            briefing_json = result.output.model_dump_json()
+            await redis.set(done_key, briefing_json, ex=86_400 * 7)
+            # Publish to WebSocket channel
+            await redis.publish("agent:briefing", briefing_json)
+            logger.info("job.daily_briefing.complete", date=today)
+        else:
+            logger.warning("job.daily_briefing.no_output", date=today)
+    except Exception:
+        logger.exception("job.daily_briefing.error")
+
+
+async def weekly_options_flow_job() -> None:
+    """Fetch options flow data for all universe symbols (stub adapter for now).
+
+    Idempotent: a done-key in Redis prevents re-processing within the same week.
+    """
+    logger.info("job.weekly_options_flow.start")
+    try:
+        from src.core.redis import get_redis
+        redis = await get_redis()
+        week_label = _now_et().date().strftime("%Y-W%W")
+        done_key = f"jobs:weekly_options_flow:{week_label}:done"
+        if await redis.exists(done_key):
+            logger.info("job.weekly_options_flow.already_done", week=week_label)
+            return
+
+        from src.data.adapters.options_flow_adapter import OptionsFlowAdapter
+        from src.data.storage import TimeSeriesStorage
+        from src.data.universe import SymbolUniverse
+
+        universe = SymbolUniverse()
+        symbols = await universe.get_symbols()
+
+        adapter = OptionsFlowAdapter()
+        storage = TimeSeriesStorage()
+
+        fetched = errors = 0
+        for symbol in symbols:
+            try:
+                records = await adapter.get_options_flow(symbol)
+                if records:
+                    await storage.store_options_flow(records)
+                fetched += 1
+            except Exception:
+                logger.warning(
+                    "job.weekly_options_flow.symbol_error", symbol=symbol, exc_info=True
+                )
+                errors += 1
+
+        await redis.set(done_key, "1", ex=_OPTIONS_DONE_TTL)
+        logger.info(
+            "job.weekly_options_flow.complete",
+            symbols=len(symbols),
+            fetched=fetched,
+            errors=errors,
+            week=week_label,
+        )
+    except Exception:
+        logger.exception("job.weekly_options_flow.error")
+
+
+async def weekly_trends_job() -> None:
+    """Fetch Google Trends data for top universe symbols (stub adapter for now).
+
+    Idempotent: a done-key in Redis prevents re-processing within the same week.
+    """
+    logger.info("job.weekly_trends.start")
+    try:
+        from src.core.redis import get_redis
+        redis = await get_redis()
+        week_label = _now_et().date().strftime("%Y-W%W")
+        done_key = f"jobs:weekly_trends:{week_label}:done"
+        if await redis.exists(done_key):
+            logger.info("job.weekly_trends.already_done", week=week_label)
+            return
+
+        from src.data.adapters.google_trends_adapter import GoogleTrendsAdapter
+        from src.data.storage import TimeSeriesStorage
+        from src.data.universe import SymbolUniverse
+
+        universe = SymbolUniverse()
+        symbols = await universe.get_symbols()
+
+        adapter = GoogleTrendsAdapter()
+        storage = TimeSeriesStorage()
+
+        fetched = errors = 0
+        for symbol in symbols:
+            try:
+                records = await adapter.get_trends(symbol, keywords=[symbol])
+                if records:
+                    await storage.store_trends(records)
+                fetched += 1
+            except Exception:
+                logger.warning("job.weekly_trends.symbol_error", symbol=symbol, exc_info=True)
+                errors += 1
+
+        await redis.set(done_key, "1", ex=_TRENDS_DONE_TTL)
+        logger.info(
+            "job.weekly_trends.complete",
+            symbols=len(symbols),
+            fetched=fetched,
+            errors=errors,
+            week=week_label,
+        )
+    except Exception:
+        logger.exception("job.weekly_trends.error")
 
 
 async def weekly_retrain_job() -> None:

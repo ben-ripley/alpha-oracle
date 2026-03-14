@@ -31,3 +31,8 @@ kill_switch:
   http_enabled: true
   telegram_enabled: false
   cooldown_minutes: 60         # After kill switch, wait 60 min before restart
+
+autonomy_transition_min_days: 30      # Min days in current mode before transition
+autonomy_min_sharpe: 0.5             # Min Sharpe ratio required for mode upgrade
+autonomy_max_drawdown_pct: 10.0      # Max drawdown allowed during evaluation period
+autonomy_min_profitable_days: 30     # Min profitable days required for mode upgrade

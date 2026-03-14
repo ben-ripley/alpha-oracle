@@ -83,7 +83,7 @@ def _make_position_opened_days_ago(symbol: str, days: int) -> Position:
         market_value=1800.0,
         unrealized_pnl=20.0,
         unrealized_pnl_pct=1.12,
-        entry_date=datetime.utcnow() - timedelta(days=days),
+        entry_date=datetime.now() - timedelta(days=days),
     )
 
 

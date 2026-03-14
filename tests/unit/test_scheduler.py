@@ -16,6 +16,8 @@ def mock_settings():
     settings.scheduler.weekly_fundamentals_cron = "0 6 * * 6"
     settings.scheduler.biweekly_altdata_cron = "0 7 1,15 * *"
     settings.scheduler.weekly_retrain_cron = "0 2 * * 0"
+    settings.scheduler.daily_sentiment_cron = "30 17 * * 1-5"
+    settings.scheduler.daily_briefing_cron = "0 8 * * 1-5"
     return settings
 
 
@@ -31,7 +33,10 @@ class TestTradingScheduler:
         scheduler.setup()
         jobs = scheduler._scheduler.get_jobs()
         job_ids = {j.id for j in jobs}
-        assert job_ids == {"daily_bars", "weekly_fundamentals", "biweekly_altdata", "weekly_retrain"}
+        assert job_ids == {
+            "daily_bars", "weekly_fundamentals", "biweekly_altdata", "weekly_retrain",
+            "daily_sentiment", "daily_briefing", "weekly_options_flow", "weekly_trends",
+        }
 
     def test_setup_disabled_registers_no_jobs(self, mock_settings):
         mock_settings.scheduler.enabled = False
@@ -45,7 +50,7 @@ class TestTradingScheduler:
         status = scheduler.get_status()
         assert "running" in status
         assert "jobs" in status
-        assert len(status["jobs"]) == 4
+        assert len(status["jobs"]) == 8
         for job in status["jobs"]:
             assert "id" in job
             assert "name" in job

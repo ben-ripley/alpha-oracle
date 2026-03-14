@@ -51,6 +51,10 @@ CHANNELS = [
     "risk:circuit_breaker",
     "risk:kill_switch",
     "signal:generated",
+    "agent:analysis",
+    "agent:recommendation",
+    "agent:briefing",
+    "agent:cost",
 ]
 
 

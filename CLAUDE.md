@@ -16,16 +16,17 @@ Swing/position trading only — no day trading (PDT rule: max 3 day trades per 5
 src/
   core/           # Models (Pydantic), interfaces (ABCs), config, database, redis
   data/           # Ingestion: IBKR/AlphaVantage/EDGAR/FINRA adapters; feeds; parsers; universe
-  strategy/       # Engine, backtest (Backtrader/VectorBT), builtin strategies, ranker
+  strategy/       # Engine, backtest (Backtrader/VectorBT), builtin strategies, ranker, Monte Carlo, regime, optimizer
   signals/        # Feature store (50+ PIT features), XGBoost pipeline, ML strategy, model monitoring
-  scheduling/     # APScheduler cron jobs (bars, fundamentals, alt data, retrain), model registry
+  scheduling/     # APScheduler cron jobs (bars, fundamentals, alt data, retrain, sentiment, briefing)
   execution/      # Order generator (Kelly sizing), smart router, broker adapter, quality tracker
-  risk/           # PDT guard, pre-trade checks, circuit breakers, kill switch, reconciliation
-  api/            # FastAPI routes: portfolio, strategies, risk, trades, system, websocket
+  risk/           # PDT guard, pre-trade checks, circuit breakers, kill switch, autonomy validator, LLM guardrails
+  agents/         # LLM agents: ClaudeAnalystAgent, TradeAdvisorAgent, PortfolioReviewAgent, cost tracker, rate limiter
+  api/            # FastAPI routes: portfolio, strategies, risk, trades, agent, analysis, system, websocket
   monitoring/     # Prometheus metrics, Slack/Telegram alerts
-web/              # React dashboard (Portfolio, Strategies, Risk, Trades, Model Health pages)
+web/              # React dashboard (Portfolio, Strategies, Risk, Trades, Model Health, Agent, Analysis pages)
 config/           # settings.yaml, risk_limits.yaml, Prometheus/Grafana configs
-tests/unit/       # 669 pytest tests
+tests/unit/       # ~950 pytest tests
 specs/adrs/        # Architecture Decision Records (001-010)
 ```
 
@@ -47,7 +48,9 @@ specs/adrs/        # Architecture Decision Records (001-010)
 1. Position limits (5% per position, 25% sector, $5 min price)
 2. Portfolio limits (10% max drawdown, 3% daily loss, 10% cash reserve)
 3. Circuit breakers (VIX >35, stale data, reconciliation, dead man switch)
-4. Autonomy modes: PAPER_ONLY → MANUAL_APPROVAL → BOUNDED_AUTONOMOUS → FULL_AUTONOMOUS
+4. LLM guardrails (`src/risk/llm_guardrails.py`) — agents are advisory-only, no broker access
+- Autonomy modes: PAPER_ONLY → MANUAL_APPROVAL → BOUNDED_AUTONOMOUS → FULL_AUTONOMOUS
+- MANUAL→BOUNDED requires 30 days + Sharpe ≥ 0.5; BOUNDED→FULL requires 90 days + Sharpe ≥ 0.5 + circuit breakers tested + guardrails verified + typed "FULL_AUTONOMOUS"
 
 ## Commands
 ```bash
@@ -77,6 +80,10 @@ python scripts/backfill_history.py --years 2 --symbols AAPL,MSFT,GOOG  # quick s
 # POST /api/system/scheduler/trigger/weekly_fundamentals
 # POST /api/system/scheduler/trigger/biweekly_altdata
 # POST /api/system/scheduler/trigger/weekly_retrain
+# POST /api/system/scheduler/trigger/daily_sentiment
+# POST /api/system/scheduler/trigger/daily_briefing
+# POST /api/system/scheduler/trigger/weekly_options_flow
+# POST /api/system/scheduler/trigger/weekly_trends
 
 # Tests
 python -m pytest tests/ -v           # Run all tests (669 tests)
@@ -96,10 +103,14 @@ Logs are written to `logs/backend.log` and `logs/frontend.log`. PID files live i
 - API proxied from Vite dev server: `/api/*` → localhost:8000
 - **IBKR client ID scheme:** broker adapter = `client_id`, data adapter = `client_id+1`, market feed = `client_id+2` (default 1/2/3). Never reuse IDs across connections.
 - **Broker provider env var:** `SA_BROKER__PROVIDER` — values: `ibkr` (IB Gateway), `simulated` (in-memory SimulatedBroker), anything else (PaperStubBroker with demo data)
-- **Job idempotency Redis keys:** `jobs:daily_bars:{date}:done`, `jobs:weekly_fundamentals:{week}:done`, `jobs:altdata:last_run`, `backfill:completed`
+- **Job idempotency Redis keys:** `jobs:daily_bars:{date}:done`, `jobs:weekly_fundamentals:{week}:done`, `jobs:altdata:last_run`, `backfill:completed`, `jobs:daily_sentiment:{date}:done`, `jobs:weekly_options_flow:{week}:done`, `jobs:weekly_trends:{week}:done`
 - **Lazy imports in job functions:** all adapter/storage classes are imported inside the job function body, not at module top-level. Patch at the source module path, e.g. `patch('src.data.storage.TimeSeriesStorage')`
+- **LLM agent config:** tiered model selection — `agent.analyst_model` (Sonnet, complex filing analysis), `agent.advisor_model` (Haiku, fast recommendations), `agent.briefing_model` (Sonnet, daily briefing). Response caching via SHA-256 hash of prompt+model, Redis key `agent:cache:{hash}`, TTL=`agent.cache_ttl_seconds` (default 4h).
+- **Agent Redis keys:** `agent:analyses:{id}`, `agent:analyses:by_symbol:{symbol}`, `agent:cache:{hash}`, `agent:cost:daily:{date}`, `agent:cost:monthly:{month}`, `agent:recommendations:{id}`, `agent:recommendations:pending`, `agent:briefings:{date}`, `agent:ratelimit:{endpoint}:{window}`
+- **Autonomy Redis keys:** `risk:autonomy:mode_since`, `risk:autonomy:transition_log`, `risk:guardrails:last_verified`
+- **Disable agents:** set `SA_AGENT__ENABLED=false` — all agent endpoints return HTTP 503, scheduler jobs skip, system continues normally
 
 ## Phase Status
 - **Phase 1 (MVP):** Implemented — data, strategies, execution, risk, API, dashboard
 - **Phase 2 (ML):** Implemented — feature store, XGBoost pipeline, walk-forward validation, signal generation, model monitoring, smart execution, ML dashboard
-- **Phase 3 (LLM):** Not started — Claude analyst agent, FinBERT, full automation
+- **Phase 3 (LLM):** Implemented — Claude analyst/advisor/briefing agents, FinBERT sentiment, Monte Carlo, regime detection, optimizer, autonomy validator, LLM guardrails, agent API routes, Agent + Analysis dashboard pages

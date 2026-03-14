@@ -53,4 +53,55 @@ export const api = {
     config: () => request<any>('/system/config'),
     heartbeat: () => request<any>('/system/heartbeat', { method: 'POST' }),
   },
+  agent: {
+    analyzeFiling: (params: { symbol: string; filing_text: string; filing_type?: string }) =>
+      request<any>('/agent/analyze-filing', { method: 'POST', body: JSON.stringify(params) }),
+    listAnalyses: (symbol: string, limit = 20) =>
+      request<any>(`/agent/analyses?symbol=${encodeURIComponent(symbol)}&limit=${limit}`),
+    getAnalysis: (id: string) =>
+      request<any>(`/agent/analyses/${encodeURIComponent(id)}`),
+    recommend: (symbol: string, contextData: Record<string, unknown> = {}) =>
+      request<any>(`/agent/recommend/${encodeURIComponent(symbol)}`, {
+        method: 'POST',
+        body: JSON.stringify({ context_data: contextData }),
+      }),
+    listRecommendations: (symbol?: string, limit = 20) =>
+      request<any>(`/agent/recommendations?${symbol ? `symbol=${encodeURIComponent(symbol)}&` : ''}limit=${limit}`),
+    approveRecommendation: (id: string) =>
+      request<any>(`/agent/recommendations/${encodeURIComponent(id)}/approve`, { method: 'POST' }),
+    rejectRecommendation: (id: string) =>
+      request<any>(`/agent/recommendations/${encodeURIComponent(id)}/reject`, { method: 'POST' }),
+    latestBriefing: () => request<any>('/agent/briefing/latest'),
+    briefingHistory: (limit = 7) => request<any>(`/agent/briefing/history?limit=${limit}`),
+    costSummary: () => request<any>('/agent/cost-summary'),
+  },
+  analysis: {
+    monteCarlo: (params: {
+      historical_returns: number[];
+      time_horizon_days?: number;
+      initial_value?: number;
+      num_simulations?: number;
+      num_paths_for_chart?: number;
+    }) => request<any>('/analysis/monte-carlo', { method: 'POST', body: JSON.stringify(params) }),
+    regime: (spyPrices: number[], vixValues: number[]) =>
+      request<any>('/analysis/regime', {
+        method: 'POST',
+        body: JSON.stringify({ spy_prices: spyPrices, vix_values: vixValues }),
+      }),
+    optimize: (strategyReturns: Record<string, number[]>, regime?: string) =>
+      request<any>('/analysis/optimize', {
+        method: 'POST',
+        body: JSON.stringify({ strategy_returns: strategyReturns, regime }),
+      }),
+    autonomyReadiness: () => request<any>('/risk/autonomy-mode/readiness'),
+    transitionAutonomy: (params: {
+      target_mode: string;
+      days_in_mode?: number;
+      sharpe?: number;
+      max_drawdown_pct?: number;
+      circuit_breakers_tested?: boolean;
+      confirmation?: string;
+    }) => request<any>('/risk/autonomy-mode/transition', { method: 'POST', body: JSON.stringify(params) }),
+    guardrailsStatus: () => request<any>('/risk/guardrails/status'),
+  },
 };

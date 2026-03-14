@@ -86,3 +86,33 @@ router:
 notifications:
   enabled: false
   channels: []  # slack, telegram
+
+agent:
+  provider: anthropic
+  analyst_model: claude-sonnet-4-20250514
+  advisor_model: claude-haiku-4-5-20251001
+  briefing_model: claude-sonnet-4-20250514
+  temperature: 0.0
+  max_input_tokens: 50000
+  max_output_tokens: 4096
+  daily_budget_usd: 5.0
+  monthly_budget_usd: 100.0
+  enabled: true
+  cache_ttl_seconds: 14400
+  rate_limit_analyses_per_hour: 10
+  rate_limit_recommendations_per_hour: 50
+
+sentiment:
+  model_name: ProsusAI/finbert
+  device: cpu
+  batch_size: 32
+  cache_ttl_seconds: 86400
+  max_articles_per_symbol: 20
+
+options_flow:
+  provider: stub
+  enabled: false
+
+trends:
+  provider: stub
+  enabled: false

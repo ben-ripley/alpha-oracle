@@ -1,9 +1,39 @@
 import {
   ShieldAlert, CheckCircle2, XCircle,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
+
+function AutonomyModeSection() {
+  const { data: modeRaw } = useApi(() => api.risk.autonomyMode());
+  const mode: string = modeRaw?.mode ?? 'PAPER_ONLY';
+  const modeBadgeColor =
+    mode === 'FULL_AUTONOMOUS' ? 'text-loss border-loss/30 bg-loss-dim' :
+    mode === 'BOUNDED_AUTONOMOUS' ? 'text-amber border-amber/30 bg-amber-dim' :
+    mode === 'MANUAL_APPROVAL' ? 'text-cyan border-cyan/30 bg-cyan-dim' :
+    'text-muted border-border bg-panel';
+
+  return (
+    <div className="glow-border rounded-xl bg-surface p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-1">Autonomy Mode</div>
+          <span className={`font-mono text-sm font-bold uppercase rounded border px-2 py-0.5 inline-block ${modeBadgeColor}`}>
+            {mode.replace(/_/g, ' ')}
+          </span>
+        </div>
+        <Link
+          to="/analysis"
+          className="font-mono text-[10px] uppercase text-cyan/80 hover:text-cyan border border-cyan/20 rounded px-2 py-1 transition-colors"
+        >
+          Transition &rarr;
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export function Risk() {
   const { data: dashboard } = useApi(() => api.risk.dashboard());
@@ -128,6 +158,9 @@ export function Risk() {
           </div>
         </div>
       </div>
+
+      {/* Autonomy mode */}
+      <AutonomyModeSection />
 
       {/* Circuit breakers */}
       <div className="glow-border rounded-xl bg-surface animate-in animate-in-delay-3">

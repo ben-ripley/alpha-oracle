@@ -1,13 +1,15 @@
 """Top-level risk manager facade implementing the RiskManager interface."""
 from __future__ import annotations
 
-from datetime import datetime
+import json
+from datetime import datetime, timezone
 
 import structlog
 
 from src.core.config import RiskSettings
 from src.core.interfaces import RiskManager
-from src.core.models import Order, PortfolioSnapshot, RiskAction, RiskCheckResult
+from src.core.models import AutonomyMode, Order, PortfolioSnapshot, RiskAction, RiskCheckResult
+from src.risk.autonomy_validator import AutonomyValidator
 from src.risk.circuit_breaker import CircuitBreakerManager
 from src.risk.kill_switch import KillSwitch
 from src.risk.pdt_guard import PDTGuardImpl
@@ -32,6 +34,7 @@ class RiskManagerImpl(RiskManager):
         self._circuit_breakers = CircuitBreakerManager()
         self._kill_switch = KillSwitch(broker_adapter=broker_adapter)
         self._reconciliation = ReconciliationEngine()
+        self._autonomy_validator = AutonomyValidator()
 
     # ------------------------------------------------------------------
     # RiskManager interface
@@ -141,3 +144,78 @@ class RiskManagerImpl(RiskManager):
     @property
     def settings(self) -> RiskSettings:
         return self._pre_trade._settings
+
+    # ------------------------------------------------------------------
+    # Autonomy mode transitions (Phase 3)
+    # ------------------------------------------------------------------
+
+    async def validate_mode_transition(
+        self,
+        target_mode: AutonomyMode,
+        portfolio_metrics: dict,
+        confirmation: str | None = None,
+    ) -> tuple[bool, list[str]]:
+        """Validate whether transitioning to target_mode is permitted.
+
+        For FULL_AUTONOMOUS, also checks that confirmation == "FULL_AUTONOMOUS".
+        """
+        current_mode = AutonomyMode(self._pre_trade._settings.autonomy_mode)
+
+        if target_mode == AutonomyMode.FULL_AUTONOMOUS:
+            if confirmation != "FULL_AUTONOMOUS":
+                return False, [
+                    "Transitioning to FULL_AUTONOMOUS requires typed confirmation 'FULL_AUTONOMOUS'"
+                ]
+
+        return self._autonomy_validator.validate_transition(
+            current_mode, target_mode, portfolio_metrics
+        )
+
+    async def transition_autonomy_mode(
+        self,
+        target_mode: AutonomyMode,
+        portfolio_metrics: dict,
+        confirmation: str | None = None,
+    ) -> bool:
+        """Validate and apply an autonomy mode transition.
+
+        On success, updates the in-memory settings and writes audit trail to Redis.
+        Returns True if transition was applied, False if validation failed.
+        """
+        approved, reasons = await self.validate_mode_transition(
+            target_mode, portfolio_metrics, confirmation
+        )
+        if not approved:
+            logger.warning(
+                "autonomy_transition_denied",
+                target=target_mode.value,
+                reasons=reasons,
+            )
+            return False
+
+        old_mode = self._pre_trade._settings.autonomy_mode
+        # Update in-memory setting
+        self._pre_trade._settings.autonomy_mode = target_mode.value
+
+        # Persist to Redis for audit trail (lazy import to avoid startup cost)
+        try:
+            from src.core.redis import get_redis
+
+            redis = await get_redis()
+            now = datetime.now(timezone.utc).isoformat()
+            await redis.set("risk:autonomy:mode_since", now)
+            log_entry = json.dumps({
+                "from": old_mode,
+                "to": target_mode.value,
+                "at": now,
+            })
+            await redis.rpush("risk:autonomy:transition_log", log_entry)
+        except Exception as exc:
+            logger.warning("autonomy_redis_write_failed", error=str(exc))
+
+        logger.info(
+            "autonomy_transition_applied",
+            from_mode=old_mode,
+            to_mode=target_mode.value,
+        )
+        return True

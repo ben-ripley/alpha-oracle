@@ -219,7 +219,7 @@ class PreTradeRiskEngine:
     ) -> RiskCheckResult:
         # Daily trade count is tracked externally; we check via metadata
         max_trades = self._settings.portfolio_limits.max_daily_trades
-        daily_trades = portfolio.metadata.get("daily_trade_count", 0) if hasattr(portfolio, "metadata") else 0
+        daily_trades = portfolio.metadata.get("daily_trade_count", 0)
         if daily_trades >= max_trades:
             return RiskCheckResult(
                 action=RiskAction.REJECT,
@@ -276,6 +276,10 @@ class PreTradeRiskEngine:
                 )
             return RiskCheckResult(action=RiskAction.APPROVE)
         elif mode == AutonomyMode.FULL_AUTONOMOUS:
+            # Layer 4 (LLM guardrails) is enforced by AutonomyValidator before
+            # transitioning to FULL_AUTONOMOUS.  Once in this mode all four risk
+            # layers (position limits, portfolio limits, circuit breakers, and LLM
+            # guardrails) have been validated.  Auto-approve here.
             return RiskCheckResult(action=RiskAction.APPROVE)
 
         return RiskCheckResult(

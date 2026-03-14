@@ -204,10 +204,13 @@ def _patch_fundamentals(
     else:
         mock_av.get_fundamentals.return_value = fundamental or _make_fundamental()
 
+    mock_estimates_adapter = AsyncMock()
+    mock_estimates_adapter.get_estimates.return_value = []
+
     mock_storage = AsyncMock()
     mock_redis = redis or _mock_redis()
 
-    return mock_universe, mock_av, mock_storage, mock_redis
+    return mock_universe, mock_av, mock_storage, mock_redis, mock_estimates_adapter
 
 
 # ---------------------------------------------------------------------------
@@ -323,10 +326,11 @@ class TestDailyBarsJob:
 class TestWeeklyFundamentalsJob:
     @pytest.mark.asyncio
     async def test_fetches_and_stores_fundamentals_for_each_symbol(self):
-        mu, mav, ms, mr = _patch_fundamentals(["AAPL", "MSFT"])
+        mu, mav, ms, mr, mea = _patch_fundamentals(["AAPL", "MSFT"])
 
         with patch("src.data.universe.SymbolUniverse", return_value=mu), \
              patch("src.data.adapters.alpha_vantage_adapter.AlphaVantageAdapter", return_value=mav), \
+             patch("src.data.adapters.analyst_estimates_adapter.AnalystEstimatesAdapter", return_value=mea), \
              patch("src.data.storage.TimeSeriesStorage", return_value=ms), \
              patch("src.core.redis.get_redis", new=AsyncMock(return_value=mr)):
             await weekly_fundamentals_job()
@@ -337,10 +341,11 @@ class TestWeeklyFundamentalsJob:
     @pytest.mark.asyncio
     async def test_already_done_symbol_is_skipped(self):
         mr = _mock_redis(is_member=True)
-        mu, mav, ms, _ = _patch_fundamentals(["AAPL", "MSFT"], redis=mr)
+        mu, mav, ms, _, mea = _patch_fundamentals(["AAPL", "MSFT"], redis=mr)
 
         with patch("src.data.universe.SymbolUniverse", return_value=mu), \
              patch("src.data.adapters.alpha_vantage_adapter.AlphaVantageAdapter", return_value=mav), \
+             patch("src.data.adapters.analyst_estimates_adapter.AnalystEstimatesAdapter", return_value=mea), \
              patch("src.data.storage.TimeSeriesStorage", return_value=ms), \
              patch("src.core.redis.get_redis", new=AsyncMock(return_value=mr)):
             await weekly_fundamentals_job()
@@ -349,11 +354,12 @@ class TestWeeklyFundamentalsJob:
 
     @pytest.mark.asyncio
     async def test_none_fundamentals_not_stored(self):
-        mu, mav, ms, mr = _patch_fundamentals(["AAPL"])
+        mu, mav, ms, mr, mea = _patch_fundamentals(["AAPL"])
         mav.get_fundamentals.return_value = None
 
         with patch("src.data.universe.SymbolUniverse", return_value=mu), \
              patch("src.data.adapters.alpha_vantage_adapter.AlphaVantageAdapter", return_value=mav), \
+             patch("src.data.adapters.analyst_estimates_adapter.AnalystEstimatesAdapter", return_value=mea), \
              patch("src.data.storage.TimeSeriesStorage", return_value=ms), \
              patch("src.core.redis.get_redis", new=AsyncMock(return_value=mr)):
             await weekly_fundamentals_job()
@@ -363,13 +369,14 @@ class TestWeeklyFundamentalsJob:
 
     @pytest.mark.asyncio
     async def test_continues_after_symbol_error(self):
-        mu, mav, ms, mr = _patch_fundamentals(
+        mu, mav, ms, mr, mea = _patch_fundamentals(
             ["AAPL", "MSFT"],
             av_side_effects=[RuntimeError("timeout"), _make_fundamental("MSFT")],
         )
 
         with patch("src.data.universe.SymbolUniverse", return_value=mu), \
              patch("src.data.adapters.alpha_vantage_adapter.AlphaVantageAdapter", return_value=mav), \
+             patch("src.data.adapters.analyst_estimates_adapter.AnalystEstimatesAdapter", return_value=mea), \
              patch("src.data.storage.TimeSeriesStorage", return_value=ms), \
              patch("src.core.redis.get_redis", new=AsyncMock(return_value=mr)):
             await weekly_fundamentals_job()  # must not raise
@@ -378,10 +385,11 @@ class TestWeeklyFundamentalsJob:
 
     @pytest.mark.asyncio
     async def test_symbols_marked_done_in_redis(self):
-        mu, mav, ms, mr = _patch_fundamentals(["AAPL"])
+        mu, mav, ms, mr, mea = _patch_fundamentals(["AAPL"])
 
         with patch("src.data.universe.SymbolUniverse", return_value=mu), \
              patch("src.data.adapters.alpha_vantage_adapter.AlphaVantageAdapter", return_value=mav), \
+             patch("src.data.adapters.analyst_estimates_adapter.AnalystEstimatesAdapter", return_value=mea), \
              patch("src.data.storage.TimeSeriesStorage", return_value=ms), \
              patch("src.core.redis.get_redis", new=AsyncMock(return_value=mr)):
             await weekly_fundamentals_job()

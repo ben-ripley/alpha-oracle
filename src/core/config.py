@@ -132,6 +132,9 @@ class MLSettings(BaseSettings):
 class AgentSettings(BaseSettings):
     provider: str = "anthropic"          # "anthropic" | "bedrock"
     model: str = "claude-sonnet-4-20250514"
+    analyst_model: str = "claude-sonnet-4-20250514"
+    advisor_model: str = "claude-haiku-4-5-20251001"
+    briefing_model: str = "claude-sonnet-4-20250514"
     aws_region: str = "us-east-1"
     temperature: float = 0.0
     max_input_tokens: int = 50_000
@@ -139,6 +142,27 @@ class AgentSettings(BaseSettings):
     daily_budget_usd: float = 5.0
     monthly_budget_usd: float = 100.0
     enabled: bool = True
+    cache_ttl_seconds: int = 14400
+    rate_limit_analyses_per_hour: int = 10
+    rate_limit_recommendations_per_hour: int = 50
+
+
+class SentimentSettings(BaseSettings):
+    model_name: str = "ProsusAI/finbert"
+    device: str = "cpu"
+    batch_size: int = 32
+    cache_ttl_seconds: int = 86400
+    max_articles_per_symbol: int = 20
+
+
+class OptionsFlowSettings(BaseSettings):
+    provider: str = "stub"
+    enabled: bool = False
+
+
+class TrendsSettings(BaseSettings):
+    provider: str = "stub"
+    enabled: bool = False
 
 
 class SchedulerSettings(BaseSettings):
@@ -147,6 +171,8 @@ class SchedulerSettings(BaseSettings):
     weekly_fundamentals_cron: str = "0 6 * * 6"  # 6am Saturday
     biweekly_altdata_cron: str = "0 7 1,15 * *"  # 7am 1st and 15th
     weekly_retrain_cron: str = "0 2 * * 0"  # 2am Sunday
+    daily_sentiment_cron: str = "30 17 * * 1-5"  # 5:30pm ET weekdays (after bars)
+    daily_briefing_cron: str = "0 8 * * 1-5"  # 8am ET weekdays
 
 
 class RouterSettings(BaseSettings):
@@ -206,6 +232,10 @@ class RiskSettings(BaseSettings):
     pdt_guard: PDTGuard = PDTGuard()
     circuit_breakers: CircuitBreakerSettings = CircuitBreakerSettings()
     kill_switch: KillSwitchSettings = KillSwitchSettings()
+    autonomy_transition_min_days: int = 30
+    autonomy_min_sharpe: float = 0.5
+    autonomy_max_drawdown_pct: float = 10.0
+    autonomy_min_profitable_days: int = 30
 
 
 class Settings(BaseSettings):
@@ -238,6 +268,9 @@ class Settings(BaseSettings):
     scheduler: SchedulerSettings = Field(default_factory=SchedulerSettings)
     router: RouterSettings = Field(default_factory=RouterSettings)
     agent: AgentSettings = Field(default_factory=AgentSettings)
+    sentiment: SentimentSettings = Field(default_factory=SentimentSettings)
+    options_flow: OptionsFlowSettings = Field(default_factory=OptionsFlowSettings)
+    trends: TrendsSettings = Field(default_factory=TrendsSettings)
 
     @classmethod
     def from_yaml(cls) -> Settings:
@@ -251,7 +284,7 @@ class Settings(BaseSettings):
             flat["environment"] = settings_data["app"].get("environment", "development")
             flat["log_level"] = settings_data["app"].get("log_level", "INFO")
 
-        for key in ["broker", "data", "database", "redis", "strategy", "execution", "monitoring", "ml", "scheduler", "router", "agent"]:
+        for key in ["broker", "data", "database", "redis", "strategy", "execution", "monitoring", "ml", "scheduler", "router", "agent", "sentiment", "options_flow", "trends"]:
             if key in settings_data:
                 flat[key] = settings_data[key]
 
