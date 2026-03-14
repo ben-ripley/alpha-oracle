@@ -76,11 +76,15 @@ class ClaudeAnalystAgent(BaseAgent):
         prompt_hash = CostTracker.compute_prompt_hash(filing_text[:10000], model, filing_type=filing_type_str)
         cached = await self._cost_tracker.get_cached_response(prompt_hash)
 
+        tool_input = None
+        input_tokens = 0
+        output_tokens = 0
         if cached:
-            tool_input = json.loads(cached)
-            input_tokens = 0
-            output_tokens = 0
-        else:
+            try:
+                tool_input = json.loads(cached)
+            except json.JSONDecodeError:
+                logger.warning("analyst.cache_decode_error")
+        if tool_input is None:
             tool_input, input_tokens, output_tokens = await self._call_claude(
                 filing_text, model, agent_cfg, SYSTEM_PROMPT, ANALYZE_FILING_TOOL
             )

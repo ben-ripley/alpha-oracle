@@ -71,11 +71,15 @@ class PortfolioReviewAgent(BaseAgent):
         prompt_hash = CostTracker.compute_prompt_hash(portfolio_text, model, date=today_str)
         cached = await self._cost_tracker.get_cached_response(prompt_hash)
 
+        tool_input = None
+        input_tokens = 0
+        output_tokens = 0
         if cached:
-            tool_input = json.loads(cached)
-            input_tokens = 0
-            output_tokens = 0
-        else:
+            try:
+                tool_input = json.loads(cached)
+            except json.JSONDecodeError:
+                logger.warning("briefing.cache_decode_error")
+        if tool_input is None:
             tool_input, input_tokens, output_tokens = await self._call_claude(
                 portfolio_text, model, agent_cfg, SYSTEM_PROMPT, GENERATE_BRIEFING_TOOL
             )

@@ -25,10 +25,17 @@ def _check_agent_enabled():
 
 
 async def _check_rate_limit(endpoint: str, limit: int) -> None:
-    """Check rate limit for the given endpoint. Raises 429 if exceeded."""
+    """Check rate limit for the given endpoint. Raises 429 if exceeded.
+
+    Fails open (allows request) if Redis is unavailable.
+    """
     from src.agents.rate_limiter import AgentRateLimiter
-    limiter = AgentRateLimiter()
-    allowed = await limiter.check_rate_limit(endpoint, limit_per_hour=limit)
+    try:
+        limiter = AgentRateLimiter()
+        allowed = await limiter.check_rate_limit(endpoint, limit_per_hour=limit)
+    except Exception:
+        logger.warning("agent.rate_limit_check_failed", endpoint=endpoint)
+        return
     if not allowed:
         raise HTTPException(
             status_code=429,
@@ -219,6 +226,7 @@ async def approve_recommendation(recommendation_id: str):
         from src.core.config import get_settings
         ttl = get_settings().agent.cache_ttl_seconds
     await redis.set(key, rec.model_dump_json(), ex=ttl)
+    await redis.lrem("agent:recommendations:pending", 1, recommendation_id)
 
     # Publish approval event
     await redis.publish("agent:recommendation", json.dumps({
@@ -258,6 +266,7 @@ async def reject_recommendation(recommendation_id: str):
         from src.core.config import get_settings
         ttl = get_settings().agent.cache_ttl_seconds
     await redis.set(key, rec.model_dump_json(), ex=ttl)
+    await redis.lrem("agent:recommendations:pending", 1, recommendation_id)
 
     await redis.publish("agent:recommendation", json.dumps({
         "event": "rejected",

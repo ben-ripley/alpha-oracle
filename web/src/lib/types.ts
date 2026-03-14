@@ -182,7 +182,7 @@ export interface DailyBriefing {
   date: string;
   portfolio_summary: string;
   daily_pnl: number;
-  risk_utilization: Record<string, number>;
+  risk_utilization: number;
   upcoming_catalysts: string[];
   suggested_exits: string[];
   market_regime: string;
