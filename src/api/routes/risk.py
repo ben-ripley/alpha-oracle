@@ -123,22 +123,48 @@ async def get_kill_switch_status():
 @router.get("/autonomy-mode/readiness")
 async def get_autonomy_mode_readiness():
     """Check readiness for each possible autonomy mode transition."""
+    from datetime import datetime, timezone
     from src.risk.autonomy_validator import AutonomyValidator
-    from src.core.config import get_settings
+    from src.core.redis import get_redis
 
     risk_mgr = await get_risk_manager()
+    broker = await get_broker()
     current_mode_str = risk_mgr.settings.autonomy_mode
     try:
         current_mode = AutonomyMode(current_mode_str)
     except ValueError:
         current_mode = AutonomyMode.PAPER_ONLY
 
+    # Fetch real portfolio metrics
+    portfolio = await broker.get_portfolio()
+    metrics_raw = await risk_mgr.portfolio_monitor.get_risk_metrics(portfolio)
+
+    # Compute days in current mode from persisted Redis timestamp
+    days_in_mode = 0
+    try:
+        redis = await get_redis()
+        mode_since_str = await redis.get("risk:autonomy:mode_since")
+        if mode_since_str:
+            mode_since = datetime.fromisoformat(mode_since_str)
+            if mode_since.tzinfo is None:
+                mode_since = mode_since.replace(tzinfo=timezone.utc)
+            days_in_mode = (datetime.now(timezone.utc) - mode_since).days
+    except Exception:
+        pass
+
+    portfolio_metrics = {
+        "days_in_mode": days_in_mode,
+        "sharpe": 0.0,  # no in-system Sharpe source; validator will flag if < threshold
+        "max_drawdown_pct": metrics_raw.get("current_drawdown_pct", 0.0),
+        "circuit_breakers_tested": False,
+    }
+
     validator = AutonomyValidator()
     readiness = {}
 
     for mode in AutonomyMode:
         approved, reasons = await validator.validate_transition(
-            current_mode, mode, portfolio_metrics={}
+            current_mode, mode, portfolio_metrics=portfolio_metrics
         )
         readiness[mode.value] = {"approved": approved, "blocking_reasons": reasons}
 

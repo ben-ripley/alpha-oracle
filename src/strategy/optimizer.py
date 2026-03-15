@@ -71,7 +71,9 @@ class MultiStrategyOptimizer:
             port_return = float(np.dot(weights, mu))
             port_var = float(np.dot(weights, np.dot(cov, weights)))
             port_vol = float(np.sqrt(max(port_var, 1e-12)))
-            return -(port_return / port_vol) if port_vol > 0 else 0.0
+            if port_vol < 1e-10:
+                return 0.0
+            return -(port_return / port_vol)
 
         # Initial guess: equal weights
         w0 = np.ones(n) / n
@@ -110,10 +112,10 @@ class MultiStrategyOptimizer:
         port_vol = float(np.sqrt(max(port_var, 0.0)) * np.sqrt(_ANNUALIZATION_FACTOR))
         port_sharpe = (port_return / port_vol) if port_vol > 0 else 0.0
 
-        # Contribution to risk: weight * marginal contribution (w_i * (Cov * w)_i / port_vol)
-        if port_vol > 0:
+        # Contribution to risk: w_i * (Cov @ w)_i / port_var — normalises to sum=1
+        if port_var > 0:
             marginal = np.dot(cov, weights)
-            risk_contribution = weights * marginal / port_vol
+            risk_contribution = weights * marginal / max(port_var, 1e-12)
         else:
             risk_contribution = weights.copy()
 

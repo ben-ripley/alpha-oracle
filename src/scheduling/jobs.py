@@ -269,7 +269,8 @@ async def daily_sentiment_job() -> None:
         redis = await get_redis()
         today = _now_et().date().isoformat()
         done_key = f"jobs:daily_sentiment:{today}:done"
-        if await redis.exists(done_key):
+        acquired = await redis.set(done_key, "1", nx=True, ex=_SENTIMENT_DONE_TTL)
+        if not acquired:
             logger.info("job.daily_sentiment.already_done", date=today)
             return
 
@@ -302,7 +303,6 @@ async def daily_sentiment_job() -> None:
                 logger.warning("job.daily_sentiment.symbol_error", symbol=symbol, exc_info=True)
                 errors += 1
 
-        await redis.set(done_key, "1", ex=_SENTIMENT_DONE_TTL)
         logger.info(
             "job.daily_sentiment.complete",
             symbols=len(symbols),

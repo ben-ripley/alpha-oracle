@@ -237,7 +237,6 @@ class RiskSettings(BaseSettings):
     autonomy_transition_min_days: int = 30
     autonomy_min_sharpe: float = 0.5
     autonomy_max_drawdown_pct: float = 10.0
-    autonomy_min_profitable_days: int = 30
 
 
 class Settings(BaseSettings):

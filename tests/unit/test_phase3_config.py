@@ -152,7 +152,6 @@ class TestRiskSettingsExtensions:
         assert settings.autonomy_transition_min_days == 30
         assert settings.autonomy_min_sharpe == 0.5
         assert settings.autonomy_max_drawdown_pct == 10.0
-        assert settings.autonomy_min_profitable_days == 30
 
     def test_existing_fields_unchanged(self):
         settings = RiskSettings()
@@ -168,12 +167,10 @@ class TestRiskSettingsExtensions:
             autonomy_transition_min_days=60,
             autonomy_min_sharpe=1.0,
             autonomy_max_drawdown_pct=5.0,
-            autonomy_min_profitable_days=45,
         )
         assert settings.autonomy_transition_min_days == 60
         assert settings.autonomy_min_sharpe == 1.0
         assert settings.autonomy_max_drawdown_pct == 5.0
-        assert settings.autonomy_min_profitable_days == 45
 
 
 # --- Settings class integration ---
@@ -219,7 +216,6 @@ class TestSettingsIntegration:
         assert hasattr(settings.risk, "autonomy_transition_min_days")
         assert hasattr(settings.risk, "autonomy_min_sharpe")
         assert hasattr(settings.risk, "autonomy_max_drawdown_pct")
-        assert hasattr(settings.risk, "autonomy_min_profitable_days")
 
     def test_from_yaml_loads_without_error(self):
         # from_yaml should load without raising exceptions
