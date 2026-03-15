@@ -108,7 +108,10 @@ class TradeAdvisorAgent(BaseAgent):
         except ValueError:
             action = RecommendationAction.HOLD
 
-        confidence = float(tool_input.get("confidence", 0.0))
+        try:
+            confidence = float(tool_input.get("confidence", 0.0))
+        except (ValueError, TypeError):
+            confidence = 0.0
         confidence = max(0.0, min(1.0, confidence))
 
         rec = TradeRecommendation(
@@ -181,9 +184,13 @@ class TradeAdvisorAgent(BaseAgent):
         system_prompt: str,
         tool: dict,
     ) -> tuple[dict, int, int]:
-        from tenacity import retry, stop_after_attempt, wait_exponential
+        from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-        @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=1, max=10),
+            retry=retry_if_exception_type((TimeoutError, ConnectionError)),
+        )
         async def _attempt() -> tuple[dict, int, int]:
             from src.agents.client import get_anthropic_client
             client = get_anthropic_client()

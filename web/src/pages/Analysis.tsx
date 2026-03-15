@@ -135,8 +135,8 @@ function AutonomyTransition({ readiness }: { readiness: AutonomyReadiness }) {
 
 export function Analysis() {
   const { data: regimeRaw } = useApi(() => api.analysis.regime([], []).catch(() => null));
-  const { data: readinessRaw } = useApi(() => api.analysis.autonomyReadiness());
-  const { data: guardrailsRaw } = useApi(() => api.analysis.guardrailsStatus());
+  const { data: readinessRaw } = useApi(() => api.risk.autonomyReadiness());
+  const { data: guardrailsRaw } = useApi(() => api.risk.guardrailsStatus());
 
   const regime = regimeRaw as RegimeAnalysis | null;
   const readiness = readinessRaw as AutonomyReadiness | null;

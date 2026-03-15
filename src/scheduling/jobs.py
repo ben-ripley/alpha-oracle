@@ -392,7 +392,8 @@ async def weekly_options_flow_job() -> None:
         redis = await get_redis()
         week_label = _now_et().date().strftime("%Y-W%W")
         done_key = f"jobs:weekly_options_flow:{week_label}:done"
-        if await redis.exists(done_key):
+        acquired = await redis.set(done_key, "1", nx=True, ex=_OPTIONS_DONE_TTL)
+        if not acquired:
             logger.info("job.weekly_options_flow.already_done", week=week_label)
             return
 
@@ -419,7 +420,6 @@ async def weekly_options_flow_job() -> None:
                 )
                 errors += 1
 
-        await redis.set(done_key, "1", ex=_OPTIONS_DONE_TTL)
         logger.info(
             "job.weekly_options_flow.complete",
             symbols=len(symbols),
@@ -442,7 +442,8 @@ async def weekly_trends_job() -> None:
         redis = await get_redis()
         week_label = _now_et().date().strftime("%Y-W%W")
         done_key = f"jobs:weekly_trends:{week_label}:done"
-        if await redis.exists(done_key):
+        acquired = await redis.set(done_key, "1", nx=True, ex=_TRENDS_DONE_TTL)
+        if not acquired:
             logger.info("job.weekly_trends.already_done", week=week_label)
             return
 
@@ -467,7 +468,6 @@ async def weekly_trends_job() -> None:
                 logger.warning("job.weekly_trends.symbol_error", symbol=symbol, exc_info=True)
                 errors += 1
 
-        await redis.set(done_key, "1", ex=_TRENDS_DONE_TTL)
         logger.info(
             "job.weekly_trends.complete",
             symbols=len(symbols),

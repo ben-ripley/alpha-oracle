@@ -34,6 +34,8 @@ export const api = {
     limits: () => request<any>('/risk/limits'),
     circuitBreakers: () => request<any>('/risk/circuit-breakers'),
     autonomyMode: () => request<any>('/risk/autonomy-mode'),
+    autonomyReadiness: () => request<any>('/risk/autonomy-mode/readiness'),
+    guardrailsStatus: () => request<any>('/risk/guardrails/status'),
     killSwitch: {
       status: () => request<any>('/risk/kill-switch/status'),
       activate: (reason: string) => request<any>(`/risk/kill-switch/activate?reason=${encodeURIComponent(reason)}`, { method: 'POST' }),
@@ -58,8 +60,8 @@ export const api = {
   agent: {
     analyzeFiling: (params: { symbol: string; filing_text: string; filing_type?: string }) =>
       request<any>('/agent/analyze-filing', { method: 'POST', body: JSON.stringify(params) }),
-    listAnalyses: (symbol: string, limit = 20) =>
-      request<any>(`/agent/analyses?symbol=${encodeURIComponent(symbol)}&limit=${limit}`),
+    listAnalyses: (symbol?: string, limit = 20) =>
+      request<any>(`/agent/analyses?${symbol ? `symbol=${encodeURIComponent(symbol)}&` : ''}limit=${limit}`),
     getAnalysis: (id: string) =>
       request<any>(`/agent/analyses/${encodeURIComponent(id)}`),
     recommend: (symbol: string, contextData: Record<string, unknown> = {}) =>
@@ -95,7 +97,6 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ strategy_returns: strategyReturns, regime }),
       }),
-    autonomyReadiness: () => request<any>('/risk/autonomy-mode/readiness'),
     transitionAutonomy: (params: {
       target_mode: string;
       days_in_mode?: number;
@@ -104,6 +105,5 @@ export const api = {
       circuit_breakers_tested?: boolean;
       confirmation?: string;
     }) => request<any>('/risk/autonomy-mode/transition', { method: 'POST', body: JSON.stringify(params) }),
-    guardrailsStatus: () => request<any>('/risk/guardrails/status'),
   },
 };

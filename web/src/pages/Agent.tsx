@@ -116,9 +116,9 @@ export function Agent() {
   const { data: costRaw, error: costError } = useApi(() => api.agent.costSummary());
   const { data: briefingRaw } = useApi(() => api.agent.latestBriefing());
   const { data: recsRaw } = useApi(() => api.agent.listRecommendations(undefined, 10));
-  const { data: analysesRaw } = useApi(() => api.agent.listAnalyses('AAPL', 5).catch(() => ({ analyses: [] })));
+  const { data: analysesRaw } = useApi(() => api.agent.listAnalyses(undefined, 5).catch(() => ({ analyses: [] })));
 
-  const agentDisabled = costError?.message?.includes('503');
+  const agentDisabled = costError?.includes('503');
 
   const cost = costRaw as LLMCostSummary | null;
   const briefing = briefingRaw as DailyBriefing | null;

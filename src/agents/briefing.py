@@ -99,6 +99,8 @@ class PortfolioReviewAgent(BaseAgent):
 
         # Extract portfolio metrics from context
         portfolio = context.data.get("portfolio")
+        if portfolio is None:
+            logger.warning("briefing_agent.portfolio_unavailable")
         daily_pnl = portfolio.daily_pnl if portfolio else 0.0
         max_drawdown = settings.risk.portfolio_limits.max_drawdown_pct
         current_drawdown = portfolio.max_drawdown_pct if portfolio else 0.0
@@ -174,9 +176,13 @@ class PortfolioReviewAgent(BaseAgent):
         system_prompt: str,
         tool: dict,
     ) -> tuple[dict, int, int]:
-        from tenacity import retry, stop_after_attempt, wait_exponential
+        from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-        @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=1, max=10),
+            retry=retry_if_exception_type((TimeoutError, ConnectionError)),
+        )
         async def _attempt() -> tuple[dict, int, int]:
             from src.agents.client import get_anthropic_client
             client = get_anthropic_client()

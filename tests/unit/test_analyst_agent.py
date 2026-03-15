@@ -446,7 +446,7 @@ class TestErrorHandling:
             nonlocal call_count
             call_count += 1
             if call_count < 2:
-                raise Exception("API temporarily unavailable")
+                raise ConnectionError("API temporarily unavailable")
             return good_response
 
         with (
