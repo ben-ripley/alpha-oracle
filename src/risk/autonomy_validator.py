@@ -202,5 +202,8 @@ class AutonomyValidator:
             return age_hours <= 24.0
 
         except Exception as exc:
+            # Fail-closed policy: any error (Redis unavailable, parse failure, etc.)
+            # is treated as "guardrails not verified", blocking BOUNDED→FULL transitions.
+            # This is consistent with manager.py which also fails closed on Redis errors.
             logger.warning("guardrails_check_failed", error=str(exc))
             return False

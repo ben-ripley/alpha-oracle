@@ -13,8 +13,10 @@ logger = structlog.get_logger(__name__)
 def _load_finbert():
     """Attempt to load the FinBERT pipeline. Returns None if transformers/torch unavailable."""
     try:
+        import torch
         from transformers import pipeline  # noqa: PLC0415
-        return pipeline("text-classification", model="ProsusAI/finbert", device=-1)
+        device = 0 if torch.cuda.is_available() else -1
+        return pipeline("text-classification", model="ProsusAI/finbert", device=device)
     except ImportError:
         logger.warning(
             "finbert.unavailable",

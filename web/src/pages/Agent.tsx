@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bot } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { api } from '../lib/api';
 import type { LLMCostSummary, DailyBriefing, TradeRecommendation, AgentAnalysis } from '../lib/types';
 
@@ -142,10 +143,20 @@ function AnalysisCard({ analysis }: { analysis: AgentAnalysis }) {
 }
 
 export function Agent() {
+  const { lastMessage } = useWebSocket();
   const { data: costRaw, error: costError } = useApi(() => api.agent.costSummary());
   const { data: briefingRaw, loading: briefingLoading, error: briefingError } = useApi(() => api.agent.latestBriefing());
-  const { data: recsRaw } = useApi(() => api.agent.listRecommendations(undefined, 10));
-  const { data: analysesRaw, loading: analysesLoading, error: analysesError } = useApi(() => api.agent.listAnalyses(undefined, 5));
+  const { data: recsRaw, refetch: refetchRecs } = useApi(() => api.agent.listRecommendations(undefined, 10));
+  const { data: analysesRaw, loading: analysesLoading, error: analysesError, refetch: refetchAnalyses } = useApi(() => api.agent.listAnalyses(undefined, 5));
+
+  useEffect(() => {
+    if (!lastMessage) return;
+    if (lastMessage.channel === 'agent:recommendation') {
+      refetchRecs();
+    } else if (lastMessage.channel === 'agent:analysis') {
+      refetchAnalyses();
+    }
+  }, [lastMessage]);
 
   const agentDisabled = costError?.includes('503');
 

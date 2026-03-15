@@ -211,7 +211,9 @@ class RiskManagerImpl(RiskManager):
             })
             await redis.rpush("risk:autonomy:transition_log", log_entry)
         except Exception as exc:
-            # Rollback in-memory state so it stays consistent with the audit trail
+            # Fail-closed policy: roll back in-memory state and re-raise so the API
+            # returns an error. Consistent with autonomy_validator which also fails
+            # closed — any error blocks or reverts the transition.
             self._pre_trade._settings.autonomy_mode = old_mode
             logger.error("autonomy_redis_write_failed", error=str(exc))
             raise

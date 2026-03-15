@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { api } from '../lib/api';
 import type { RegimeAnalysis, OptimizationResult, AutonomyReadiness, GuardrailStatus } from '../lib/types';
 import {
@@ -139,9 +141,16 @@ function AutonomyTransition({ readiness }: { readiness: AutonomyReadiness }) {
 }
 
 export function Analysis() {
-  const { data: regimeRaw } = useApi(() => api.analysis.regime([], []).catch(() => null));
-  const { data: readinessRaw } = useApi(() => api.risk.autonomyReadiness());
-  const { data: guardrailsRaw } = useApi(() => api.risk.guardrailsStatus());
+  const { lastMessage } = useWebSocket();
+  const { data: regimeRaw, loading: regimeLoading, refetch: refetchRegime } = useApi(() => api.analysis.regime([], []).catch(() => null));
+  const { data: readinessRaw, loading: readinessLoading, error: readinessError } = useApi(() => api.risk.autonomyReadiness());
+  const { data: guardrailsRaw, loading: guardrailsLoading } = useApi(() => api.risk.guardrailsStatus());
+
+  useEffect(() => {
+    if (lastMessage?.channel === 'agent:analysis') {
+      refetchRegime();
+    }
+  }, [lastMessage]);
 
   const regime = regimeRaw as RegimeAnalysis | null;
   const readiness = readinessRaw as AutonomyReadiness | null;
@@ -167,16 +176,20 @@ export function Analysis() {
             <div className="font-mono text-[9px] uppercase tracking-wider text-muted mb-1">
               Market Regime
             </div>
-            <div className={`font-mono text-sm font-bold uppercase rounded border px-2 py-0.5 inline-block ${REGIME_BG[regimeName] ?? ''} ${REGIME_COLORS[regimeName] ?? 'text-dim'}`}>
-              {regimeName}
-            </div>
+            {regimeLoading ? (
+              <div className="font-mono text-sm text-muted">Loading...</div>
+            ) : (
+              <div className={`font-mono text-sm font-bold uppercase rounded border px-2 py-0.5 inline-block ${REGIME_BG[regimeName] ?? ''} ${REGIME_COLORS[regimeName] ?? 'text-dim'}`}>
+                {regimeName}
+              </div>
+            )}
           </div>
           <div className="rounded-lg bg-panel px-4 py-3">
             <div className="font-mono text-[9px] uppercase tracking-wider text-muted mb-1">
               Regime Confidence
             </div>
             <div className="font-mono text-sm font-semibold text-bright">
-              {regimeProb}%
+              {regimeLoading ? '—' : `${regimeProb}%`}
             </div>
           </div>
           <div className="rounded-lg bg-panel px-4 py-3">
@@ -184,7 +197,7 @@ export function Analysis() {
               Guardrails
             </div>
             <div className={`font-mono text-sm font-semibold ${guardrails?.verified ? 'text-gain' : 'text-amber'}`}>
-              {guardrails?.verified ? 'Verified' : guardrails?.last_verified ? `Stale (${guardrails.age_hours?.toFixed(1)}h)` : 'Unverified'}
+              {guardrailsLoading ? 'Loading...' : guardrails?.verified ? 'Verified' : guardrails?.last_verified ? `Stale (${guardrails.age_hours?.toFixed(1)}h)` : 'Unverified'}
             </div>
           </div>
         </div>
@@ -236,10 +249,14 @@ export function Analysis() {
           <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-3">
             Autonomy Mode Readiness
           </div>
-          {readiness ? (
+          {readinessLoading ? (
+            <p className="font-mono text-[11px] text-muted">Loading readiness data...</p>
+          ) : readinessError ? (
+            <p className="font-mono text-[11px] text-loss">Failed to load readiness data</p>
+          ) : readiness ? (
             <AutonomyTransition readiness={readiness} />
           ) : (
-            <p className="font-mono text-[11px] text-muted">Loading readiness data...</p>
+            <p className="font-mono text-[11px] text-muted">No readiness data available</p>
           )}
         </div>
       </div>

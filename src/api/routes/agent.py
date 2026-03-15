@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 
 import structlog
@@ -48,7 +48,7 @@ async def _check_rate_limit(endpoint: str, limit: int) -> None:
 # ---------------------------------------------------------------------------
 
 class AnalyzeFilingRequest(BaseModel):
-    symbol: str = Field(..., min_length=1, max_length=10)
+    symbol: str = Field(..., min_length=1, max_length=5, pattern="^[A-Z]{1,5}$")
     filing_text: str = Field(..., min_length=1, max_length=500_000)
     filing_type: str = Field("FILING_10K", min_length=1, max_length=30)
 
@@ -89,7 +89,7 @@ async def analyze_filing(request: AnalyzeFilingRequest):
 
 
 @router.get("/analyses")
-async def list_analyses(symbol: str | None = None, limit: int = Query(20, ge=1, le=100)):
+async def list_analyses(symbol: str | None = Query(None, pattern="^[A-Z]{1,5}$"), limit: int = Query(20, ge=1, le=100)):
     """List recent filing analyses, optionally filtered by symbol."""
     _check_agent_enabled()
 
@@ -136,7 +136,7 @@ class RecommendRequest(BaseModel):
 
 
 @router.post("/recommend/{symbol}")
-async def recommend_trade(symbol: str, request: RecommendRequest = RecommendRequest()):
+async def recommend_trade(symbol: str = Path(..., pattern="^[A-Z]{1,5}$"), request: RecommendRequest = RecommendRequest()):
     """Trigger advisor analysis for a symbol. Rate-limited.
 
     Returns a TradeRecommendation with action (BUY/SELL/HOLD), confidence,
@@ -170,7 +170,7 @@ async def recommend_trade(symbol: str, request: RecommendRequest = RecommendRequ
 
 
 @router.get("/recommendations")
-async def list_recommendations(symbol: str | None = None, limit: int = Query(20, ge=1, le=100)):
+async def list_recommendations(symbol: str | None = Query(None, pattern="^[A-Z]{1,5}$"), limit: int = Query(20, ge=1, le=100)):
     """List recent trade recommendations from Redis."""
     _check_agent_enabled()
 

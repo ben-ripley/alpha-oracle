@@ -57,6 +57,7 @@ def _make_redis(*, cached: str | None = None) -> AsyncMock:
 
     redis.get = AsyncMock(side_effect=_get_side_effect)
     redis.set = AsyncMock()
+    redis.eval = AsyncMock(return_value=1)
     redis.lpush = AsyncMock()
     redis.ltrim = AsyncMock()
     redis.expire = AsyncMock()
@@ -270,8 +271,9 @@ class TestResponseCaching:
 
             mock_client.messages.create.assert_called_once()
 
-        # Result should be cached
-        assert redis.set.call_count >= 2  # cache + analysis storage
+        # Cache should be written; analysis stored via eval (Lua script)
+        assert redis.set.call_count >= 1  # cache write
+        assert redis.eval.call_count >= 1  # atomic analysis storage
         assert result.metadata["cached"] is False
 
     @pytest.mark.asyncio
@@ -342,9 +344,9 @@ class TestRedisStorage:
 
             await agent.run(_make_context(symbol="MSFT"))
 
-        # Check that analysis was stored
-        set_calls = [call for call in redis.set.call_args_list if "agent:analyses:" in str(call)]
-        assert len(set_calls) >= 1
+        # Analysis stored atomically via Lua script (eval), not raw set
+        eval_calls = [call for call in redis.eval.call_args_list if "agent:analyses:" in str(call)]
+        assert len(eval_calls) >= 1
 
     @pytest.mark.asyncio
     async def test_symbol_list_updated(self):
@@ -361,9 +363,9 @@ class TestRedisStorage:
 
             await agent.run(_make_context(symbol="TSLA"))
 
-        redis.lpush.assert_called_once()
-        key = redis.lpush.call_args[0][0]
-        assert "by_symbol:TSLA" in key
+        # Symbol index is updated inside the atomic Lua script (eval)
+        eval_calls = [call for call in redis.eval.call_args_list if "by_symbol:TSLA" in str(call)]
+        assert len(eval_calls) >= 1
 
 
 # ---------------------------------------------------------------------------

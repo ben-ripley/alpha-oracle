@@ -294,7 +294,7 @@ async def daily_sentiment_job() -> None:
                 if not articles:
                     skipped += 1
                     continue
-                texts = [a.summary or a.title for a in articles if a.summary or a.title]
+                texts = [a.summary or a.title for a in articles if (a.summary or a.title or "").strip()]
                 sentiment_scores = await scorer.score_texts(symbol, texts, source="news")
                 if sentiment_scores:
                     await storage.store_sentiment(sentiment_scores)

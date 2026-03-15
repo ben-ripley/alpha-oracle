@@ -22,8 +22,11 @@ class TestLoadFinbert:
         mock_pipeline_fn = MagicMock(return_value=MagicMock())
         mock_transformers = MagicMock()
         mock_transformers.pipeline = mock_pipeline_fn
+        # torch is now imported first for CUDA detection; mock both to control device
+        mock_torch = MagicMock()
+        mock_torch.cuda.is_available.return_value = False  # simulate CPU-only env
 
-        with patch.dict(sys.modules, {"transformers": mock_transformers}):
+        with patch.dict(sys.modules, {"transformers": mock_transformers, "torch": mock_torch}):
             result = _load_finbert()
 
         mock_pipeline_fn.assert_called_once_with(
@@ -31,11 +34,28 @@ class TestLoadFinbert:
         )
         assert result is not None
 
+    def test_returns_pipeline_uses_gpu_when_available(self):
+        mock_pipeline_fn = MagicMock(return_value=MagicMock())
+        mock_transformers = MagicMock()
+        mock_transformers.pipeline = mock_pipeline_fn
+        mock_torch = MagicMock()
+        mock_torch.cuda.is_available.return_value = True  # simulate GPU env
+
+        with patch.dict(sys.modules, {"transformers": mock_transformers, "torch": mock_torch}):
+            result = _load_finbert()
+
+        mock_pipeline_fn.assert_called_once_with(
+            "text-classification", model="ProsusAI/finbert", device=0
+        )
+        assert result is not None
+
     def test_returns_none_on_exception(self):
         mock_transformers = MagicMock()
         mock_transformers.pipeline.side_effect = RuntimeError("CUDA error")
+        mock_torch = MagicMock()
+        mock_torch.cuda.is_available.return_value = False
 
-        with patch.dict(sys.modules, {"transformers": mock_transformers}):
+        with patch.dict(sys.modules, {"transformers": mock_transformers, "torch": mock_torch}):
             result = _load_finbert()
 
         assert result is None

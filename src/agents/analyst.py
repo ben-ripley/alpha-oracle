@@ -187,17 +187,37 @@ class ClaudeAnalystAgent(BaseAgent):
 
         return await _attempt()
 
+    # Lua script: atomically SET the analysis, LPUSH+LTRIM the symbol index, EXPIRE.
+    # Prevents concurrent requests from interleaving the four operations and
+    # accidentally trimming a freshly stored entry.
+    _STORE_LUA = """
+local key        = KEYS[1]
+local symbol_key = KEYS[2]
+local id         = ARGV[1]
+local json       = ARGV[2]
+local ttl        = tonumber(ARGV[3])
+local max_e      = tonumber(ARGV[4])
+redis.call('SET',    key,        json, 'EX', ttl)
+redis.call('LPUSH',  symbol_key, id)
+redis.call('LTRIM',  symbol_key, 0, max_e - 1)
+redis.call('EXPIRE', symbol_key, ttl)
+return 1
+"""
+
     async def _store_analysis(self, analysis) -> None:
-        """Store analysis in Redis under analyses:{id} and by_symbol:{symbol} list."""
+        """Store analysis atomically in Redis using a Lua script."""
         redis = await self._get_redis()
         analysis_id = str(uuid.uuid4())
         key = f"agent:analyses:{analysis_id}"
         symbol_key = f"agent:analyses:by_symbol:{analysis.symbol}"
 
-        await redis.set(key, analysis.model_dump_json(), ex=_ANALYSES_TTL)
-        await redis.lpush(symbol_key, analysis_id)
-        await redis.ltrim(symbol_key, 0, _MAX_ANALYSES_PER_SYMBOL - 1)
-        await redis.expire(symbol_key, _ANALYSES_TTL)
+        await redis.eval(
+            self._STORE_LUA,
+            2,
+            key, symbol_key,
+            analysis_id, analysis.model_dump_json(),
+            str(_ANALYSES_TTL), str(_MAX_ANALYSES_PER_SYMBOL),
+        )
 
     async def get_analyses_for_symbol(self, symbol: str) -> list:
         """Retrieve recent analyses for a symbol from Redis."""

@@ -1,12 +1,19 @@
 """Sentiment feature calculator for ML signal pipeline."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
 
 from src.core.models import SentimentScore
+
+def _as_utc(ts: datetime) -> datetime:
+    """Normalize a datetime to UTC; treat naive datetimes as UTC."""
+    if ts.tzinfo is None:
+        return ts.replace(tzinfo=timezone.utc)
+    return ts.astimezone(timezone.utc)
+
 
 _SENTIMENT_COLS = [
     "sentiment_mean_7d",
@@ -49,15 +56,16 @@ class SentimentFeatureCalculator:
         )
 
         for dt in index:
-            # PIT: only use scores with timestamp <= as_of_date
+            # PIT: normalize to UTC for comparison; treat naive timestamps as UTC
+            as_of_utc = dt.to_pydatetime().replace(tzinfo=timezone.utc)
             scores_30d = [
                 s for s in sorted_scores
-                if s.timestamp.replace(tzinfo=None) <= dt.to_pydatetime().replace(tzinfo=None)
-                and s.timestamp.replace(tzinfo=None) >= (dt - timedelta(days=30)).to_pydatetime().replace(tzinfo=None)
+                if _as_utc(s.timestamp) <= as_of_utc
+                and _as_utc(s.timestamp) >= as_of_utc - timedelta(days=30)
             ]
             scores_7d = [
                 s for s in scores_30d
-                if s.timestamp.replace(tzinfo=None) >= (dt - timedelta(days=7)).to_pydatetime().replace(tzinfo=None)
+                if _as_utc(s.timestamp) >= as_of_utc - timedelta(days=7)
             ]
 
             # Filing-specific scores (source contains "filing" or "10-k" etc.)
