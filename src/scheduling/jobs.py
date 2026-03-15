@@ -261,8 +261,11 @@ async def daily_sentiment_job() -> None:
     try:
         from src.core.config import get_settings
         settings = get_settings()
-        if not settings.agent.enabled:
-            logger.info("job.daily_sentiment.skipped", reason="agent.enabled=False")
+        # FinBERT sentiment runs independently of the LLM agent flag — it does not
+        # call Claude. Check sentiment.enabled so users can disable just the LLM agents
+        # (SA_AGENT__ENABLED=false) without losing FinBERT-derived model features.
+        if not settings.sentiment.enabled:
+            logger.info("job.daily_sentiment.skipped", reason="sentiment.enabled=False")
             return
 
         from src.core.redis import get_redis

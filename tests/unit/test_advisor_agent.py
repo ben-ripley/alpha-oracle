@@ -6,7 +6,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.agents.advisor import TradeAdvisorAgent, _BOUNDED_AUTO_CONFIDENCE_THRESHOLD
+from src.agents.advisor import TradeAdvisorAgent
+
+# Default value from AgentSettings.bounded_auto_confidence_threshold
+_BOUNDED_AUTO_CONFIDENCE_THRESHOLD = 0.7
 from src.agents.base import AgentContext
 from src.agents.cost_tracker import BudgetExceededError
 
@@ -82,6 +85,9 @@ def _make_settings(
     agent_cfg.daily_budget_usd = daily_budget
     agent_cfg.monthly_budget_usd = monthly_budget
     agent_cfg.cache_ttl_seconds = 14400
+    agent_cfg.bounded_auto_confidence_threshold = _BOUNDED_AUTO_CONFIDENCE_THRESHOLD
+    agent_cfg.recommendation_ttl_seconds = 604800
+    agent_cfg.max_recommendations_per_symbol = 50
 
     risk_cfg = MagicMock()
     risk_cfg.autonomy_mode = autonomy_mode

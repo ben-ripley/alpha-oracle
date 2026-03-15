@@ -30,7 +30,9 @@ class MonteCarloSimulator:
             time_horizon_days: Number of days to simulate forward.
             initial_value: Starting portfolio value.
             num_paths_for_chart: Number of paths to include in result for charting.
-            seed: Optional random seed for reproducibility.
+            seed: Optional random seed for reproducibility. Pass ``None``
+                (the default) for non-reproducible results — each call will
+                produce a different simulation draw.
 
         Returns:
             MonteCarloResult with percentile bands, VaR, probability of loss,
@@ -74,8 +76,9 @@ class MonteCarloSimulator:
         probability_of_loss = float(np.mean(final_values < initial_value))
 
         # VaR at 95% confidence: the 5th percentile loss (positive number = loss)
+        # Rounded to 2 decimal places to avoid float precision noise for large portfolios.
         p5_final = float(np.percentile(final_values, 5))
-        value_at_risk_95 = float(max(initial_value - p5_final, 0.0))
+        value_at_risk_95 = round(max(initial_value - p5_final, 0.0), 2)
 
         # Subset of paths for charting
         chart_indices = rng.choice(self.num_simulations, size=min(num_paths_for_chart, self.num_simulations), replace=False)

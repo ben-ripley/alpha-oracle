@@ -13,9 +13,6 @@ from src.agents.guardrails import guardrail
 
 logger = structlog.get_logger(__name__)
 
-_ANALYSES_TTL = 86400 * 7  # 7 days
-_MAX_ANALYSES_PER_SYMBOL = 20
-
 
 class ClaudeAnalystAgent(BaseAgent):
     """Analyzes SEC filings using Claude and returns structured AgentAnalysis."""
@@ -206,6 +203,8 @@ return 1
 
     async def _store_analysis(self, analysis) -> None:
         """Store analysis atomically in Redis using a Lua script."""
+        from src.core.config import get_settings
+        cfg = get_settings().agent
         redis = await self._get_redis()
         analysis_id = str(uuid.uuid4())
         key = f"agent:analyses:{analysis_id}"
@@ -216,16 +215,18 @@ return 1
             2,
             key, symbol_key,
             analysis_id, analysis.model_dump_json(),
-            str(_ANALYSES_TTL), str(_MAX_ANALYSES_PER_SYMBOL),
+            str(cfg.analyses_ttl_seconds), str(cfg.max_analyses_per_symbol),
         )
 
     async def get_analyses_for_symbol(self, symbol: str) -> list:
         """Retrieve recent analyses for a symbol from Redis."""
+        from src.core.config import get_settings
         from src.core.models import AgentAnalysis
 
+        cfg = get_settings().agent
         redis = await self._get_redis()
         symbol_key = f"agent:analyses:by_symbol:{symbol}"
-        ids = await redis.lrange(symbol_key, 0, _MAX_ANALYSES_PER_SYMBOL - 1)
+        ids = await redis.lrange(symbol_key, 0, cfg.max_analyses_per_symbol - 1)
 
         analyses = []
         for analysis_id in ids:

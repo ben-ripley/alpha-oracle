@@ -1,6 +1,7 @@
 """Context gathering utilities for agent workflows."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 import structlog
@@ -14,8 +15,16 @@ async def gather_symbol_context(symbol: str) -> dict[str, Any]:
     Returns a partial dict gracefully if any source is unavailable.
     This is a best-effort aggregation — missing data produces empty/None values,
     not exceptions.
+
+    The ``_gathered_at`` key records when the context was assembled (UTC ISO-8601).
+    Agents and callers can use this to detect stale data: if ``_gathered_at`` is
+    more than a few hours old, sentiment and insider signals may no longer reflect
+    current market conditions.
     """
-    ctx: dict[str, Any] = {"symbol": symbol}
+    ctx: dict[str, Any] = {
+        "symbol": symbol,
+        "_gathered_at": datetime.now(timezone.utc).isoformat(),
+    }
 
     # Technical features from FeatureStore
     try:

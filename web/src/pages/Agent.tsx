@@ -242,8 +242,8 @@ export function Agent() {
           </div>
           {recs.length > 0 ? (
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {recs.map((rec, i) => (
-                <RecommendationCard key={rec.id ?? i} rec={rec} />
+              {recs.map((rec) => (
+                <RecommendationCard key={rec.id} rec={rec} />
               ))}
             </div>
           ) : (
@@ -263,12 +263,12 @@ export function Agent() {
           <p className="font-mono text-[11px] text-loss">Failed to load analyses</p>
         ) : analyses.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
-            {analyses.map((a, i) => (
-              <AnalysisCard key={a.id ?? i} analysis={a} />
+            {analyses.map((a) => (
+              <AnalysisCard key={a.id} analysis={a} />
             ))}
           </div>
         ) : (
-          <p className="font-mono text-[11px] text-muted">No analyses yet</p>
+          <p className="font-mono text-[11px] text-muted">No filing analyses available. Analyses are generated automatically when SEC filings are processed.</p>
         )}
       </div>
     </div>

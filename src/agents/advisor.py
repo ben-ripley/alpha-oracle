@@ -13,9 +13,6 @@ from src.agents.guardrails import guardrail
 
 logger = structlog.get_logger(__name__)
 
-_RECS_TTL = 86400 * 7  # 7 days
-_BOUNDED_AUTO_CONFIDENCE_THRESHOLD = 0.7
-
 
 class TradeAdvisorAgent(BaseAgent):
     """Produces trade recommendations via a plain async workflow (no LangGraph)."""
@@ -159,14 +156,17 @@ class TradeAdvisorAgent(BaseAgent):
 
     def _apply_risk_gate(self, rec, autonomy_mode: str):
         """Apply autonomy mode logic to set human_approved on the recommendation."""
+        from src.core.config import get_settings
         from src.core.models import AutonomyMode
+
+        confidence_threshold = get_settings().agent.bounded_auto_confidence_threshold
 
         if autonomy_mode in (AutonomyMode.PAPER_ONLY.value, AutonomyMode.MANUAL_APPROVAL.value):
             # Queue for human review
             rec = rec.model_copy(update={"human_approved": None})
         elif autonomy_mode == AutonomyMode.BOUNDED_AUTONOMOUS.value:
             # Auto-approve only if confidence meets threshold
-            if rec.confidence >= _BOUNDED_AUTO_CONFIDENCE_THRESHOLD:
+            if rec.confidence >= confidence_threshold:
                 rec = rec.model_copy(update={"human_approved": True})
             else:
                 rec = rec.model_copy(update={"human_approved": None})
@@ -223,27 +223,27 @@ class TradeAdvisorAgent(BaseAgent):
 
         return await _attempt()
 
-    _MAX_RECS_PER_SYMBOL = 50
-
     async def _store_recommendation(self, rec) -> None:
+        from src.core.config import get_settings
+        cfg = get_settings().agent
         redis = await self._get_redis()
         rec_id = str(uuid.uuid4())
         key = f"agent:recommendations:{rec_id}"
 
-        await redis.set(key, rec.model_dump_json(), ex=_RECS_TTL)
+        await redis.set(key, rec.model_dump_json(), ex=cfg.recommendation_ttl_seconds)
 
         # Maintain recent index (all recommendations, newest first)
         await redis.lpush("agent:recommendations:recent", rec_id)
         await redis.ltrim("agent:recommendations:recent", 0, 199)
-        await redis.expire("agent:recommendations:recent", _RECS_TTL)
+        await redis.expire("agent:recommendations:recent", cfg.recommendation_ttl_seconds)
 
         # Maintain per-symbol index
         symbol = rec.symbol or ""
         if symbol:
             symbol_key = f"agent:recommendations:by_symbol:{symbol}"
             await redis.lpush(symbol_key, rec_id)
-            await redis.ltrim(symbol_key, 0, self._MAX_RECS_PER_SYMBOL - 1)
-            await redis.expire(symbol_key, _RECS_TTL)
+            await redis.ltrim(symbol_key, 0, cfg.max_recommendations_per_symbol - 1)
+            await redis.expire(symbol_key, cfg.recommendation_ttl_seconds)
 
         # Queue pending recommendations for human review
         if rec.human_approved is None:

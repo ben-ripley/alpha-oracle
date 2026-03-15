@@ -130,7 +130,13 @@ class RegimeDetector:
 
     @staticmethod
     def _compute_ma(prices: list[float], window: int) -> float:
-        """Compute simple moving average over the last `window` prices."""
+        """Compute simple moving average over the last `window` prices.
+
+        Fallback behavior when insufficient data is available:
+          - Fewer than `window` prices: use the mean of all available prices.
+          - Empty price list: return 0.0 (callers treat ma50==0 or ma200==0 as
+            "data unavailable" and skip the corresponding regime rule).
+        """
         if len(prices) < window:
             return float(sum(prices)) / len(prices) if prices else 0.0
         return float(sum(prices[-window:])) / window

@@ -145,9 +145,15 @@ class AgentSettings(BaseSettings):
     cache_ttl_seconds: int = 14400
     rate_limit_analyses_per_hour: int = 10
     rate_limit_recommendations_per_hour: int = 50
+    max_analyses_per_symbol: int = 20
+    max_recommendations_per_symbol: int = 50
+    analyses_ttl_seconds: int = 604800         # 7 days
+    recommendation_ttl_seconds: int = 604800   # 7 days
+    bounded_auto_confidence_threshold: float = 0.7
 
 
 class SentimentSettings(BaseSettings):
+    enabled: bool = True  # set SA_SENTIMENT__ENABLED=false to disable FinBERT separately from LLM agents
     model_name: str = "ProsusAI/finbert"
     device: str = "cpu"
     batch_size: int = 32

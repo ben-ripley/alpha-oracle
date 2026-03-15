@@ -70,13 +70,17 @@ class FinBERTSentimentPipeline:
 
         results: list[SentimentScore] = []
         now = datetime.now(timezone.utc)
+        failed_batches = 0
+        total_batches = 0
 
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
+            total_batches += 1
             try:
                 outputs = pipe(batch, truncation=True, max_length=512)
             except Exception:
                 logger.warning("finbert.score_batch_failed", symbol=symbol, exc_info=True)
+                failed_batches += 1
                 continue
 
             for text, output in zip(batch, outputs):
@@ -100,5 +104,14 @@ class FinBERTSentimentPipeline:
                         confidence=score_raw,
                     )
                 )
+
+        if failed_batches > 0:
+            logger.warning(
+                "finbert.batches_failed_summary",
+                symbol=symbol,
+                failed_batches=failed_batches,
+                total_batches=total_batches,
+                scored_articles=len(results),
+            )
 
         return results
