@@ -73,6 +73,8 @@ def _mock_storage(bars_per_symbol: dict[str, list]) -> MagicMock:
         return bars_per_symbol.get(symbol, [])
 
     mock.get_ohlcv = _get_ohlcv
+    mock.get_sentiment = AsyncMock(return_value=[])
+    mock.get_analyst_estimates = AsyncMock(return_value=[])
     return mock
 
 
@@ -362,6 +364,8 @@ class TestWeeklyRetrainJobErrorHandling:
             return _make_bars(symbol)
 
         storage.get_ohlcv = _get_ohlcv
+        storage.get_sentiment = AsyncMock(return_value=[])
+        storage.get_analyst_estimates = AsyncMock(return_value=[])
 
         pipeline = _mock_pipeline(min_samples=1)
         store = _mock_feature_store(_make_feature_df())

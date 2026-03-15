@@ -48,6 +48,32 @@ class MultiStrategyOptimizer:
                 portfolio_volatility=0.0,
             )
 
+        if n == 1:
+            name = strategy_names[0]
+            returns_arr = np.array(strategy_returns[name], dtype=float)
+            if len(returns_arr) > 0:
+                mu_single = float(np.mean(returns_arr)) * _ANNUALIZATION_FACTOR
+                daily_var = float(np.var(returns_arr))
+                vol_single = float(np.sqrt(daily_var) * np.sqrt(_ANNUALIZATION_FACTOR))
+                sharpe_single = (mu_single / vol_single) if vol_single > 1e-10 else 0.0
+            else:
+                mu_single = 0.0
+                vol_single = 0.0
+                sharpe_single = 0.0
+            return OptimizationResult(
+                allocations=[
+                    StrategyAllocation(
+                        strategy_name=name,
+                        weight=1.0,
+                        expected_return=round(mu_single, 6),
+                        contribution_to_risk=1.0,
+                    )
+                ],
+                portfolio_sharpe=round(sharpe_single, 6),
+                portfolio_expected_return=round(mu_single, 6),
+                portfolio_volatility=round(vol_single, 6),
+            )
+
         # Build returns matrix; pad shorter series with NaN then drop NaN rows
         min_len = min(len(v) for v in strategy_returns.values())
         if min_len == 0:

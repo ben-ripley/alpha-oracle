@@ -38,6 +38,15 @@ async def run_monte_carlo(request: MonteCarloRequest):
     if request.time_horizon_days <= 0:
         raise HTTPException(status_code=400, detail="time_horizon_days must be positive")
 
+    if request.num_paths_for_chart > request.num_simulations:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"num_paths_for_chart ({request.num_paths_for_chart}) must not exceed "
+                f"num_simulations ({request.num_simulations})"
+            ),
+        )
+
     from src.strategy.monte_carlo import MonteCarloSimulator
 
     simulator = MonteCarloSimulator(num_simulations=request.num_simulations)
@@ -70,8 +79,15 @@ async def get_regime(spy_prices: str = "", vix_values: str = ""):
         ).model_dump()
 
     try:
-        spy_list = [float(x) for x in spy_prices.split(",") if x.strip()]
-        vix_list = [float(x) for x in vix_values.split(",") if x.strip()]
+        spy_tokens = [x.strip() for x in spy_prices.split(",")]
+        vix_tokens = [x.strip() for x in vix_values.split(",")]
+        if any(not t for t in spy_tokens) or any(not t for t in vix_tokens):
+            raise HTTPException(
+                status_code=400,
+                detail="spy_prices and vix_values must not contain empty tokens (e.g. '1.0,,2.0')",
+            )
+        spy_list = [float(t) for t in spy_tokens]
+        vix_list = [float(t) for t in vix_tokens]
     except ValueError:
         raise HTTPException(
             status_code=400,

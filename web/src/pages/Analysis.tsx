@@ -39,8 +39,13 @@ const STUB_MC_DATA = Array.from({ length: 252 }, (_, i) => ({
 function MonteCarloChart() {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-3">
-        Monte Carlo (1Y, 10K runs)
+      <div className="flex items-center justify-between mb-3">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-muted">
+          Monte Carlo (1Y, 10K runs)
+        </div>
+        <span className="rounded border border-amber/40 bg-amber-dim px-2 py-0.5 font-mono text-[9px] uppercase text-amber tracking-wider">
+          Demo Data
+        </span>
       </div>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={STUB_MC_DATA} margin={{ top: 4, right: 4, bottom: 4, left: 0 }}>
@@ -196,9 +201,9 @@ export function Analysis() {
           <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-3">
             Regime History
           </div>
-          {regime && regime.regime_history.length > 0 ? (
+          {(regime?.regime_history?.length ?? 0) > 0 ? (
             <div className="space-y-1 max-h-48 overflow-y-auto">
-              {regime.regime_history.slice(-20).reverse().map((entry, i) => (
+              {regime?.regime_history?.slice(-20).reverse().map((entry, i) => (
                 <div key={i} className="flex items-center justify-between rounded bg-panel px-3 py-1.5">
                   <span className="font-mono text-[9px] text-muted">Day {entry.day_index}</span>
                   <span className={`font-mono text-[9px] uppercase font-semibold ${REGIME_COLORS[entry.regime] ?? 'text-dim'}`}>

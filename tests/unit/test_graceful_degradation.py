@@ -31,13 +31,14 @@ class TestDailySentimentJobDisabled:
             await daily_sentiment_job()  # Must not raise
 
     async def test_idempotent_via_done_key(self):
-        """daily_sentiment_job skips processing when done key exists in Redis."""
+        """daily_sentiment_job skips processing when SET NX returns None (already done)."""
         mock_settings = MagicMock()
         mock_settings.agent.enabled = True
         mock_settings.sentiment.max_articles_per_symbol = 5
 
         mock_redis = AsyncMock()
-        mock_redis.exists.return_value = 1  # done key exists
+        # SET NX returns None when key already exists (already done)
+        mock_redis.set = AsyncMock(return_value=None)
 
         with (
             patch("src.core.config.get_settings", return_value=mock_settings),
@@ -46,8 +47,8 @@ class TestDailySentimentJobDisabled:
             from src.scheduling.jobs import daily_sentiment_job
             await daily_sentiment_job()
 
-        # Universe should not be fetched if done key exists
-        mock_redis.exists.assert_called_once()
+        # SET NX was attempted but not acquired — no further processing
+        mock_redis.set.assert_called_once()
 
 
 class TestDailyBriefingJobDisabled:
@@ -83,20 +84,20 @@ class TestDailyBriefingJobDisabled:
 
 class TestWeeklyOptionsFlowJob:
     async def test_idempotent_via_done_key(self):
-        """weekly_options_flow_job skips when done key exists."""
+        """weekly_options_flow_job skips when SET NX returns None (already done)."""
         mock_redis = AsyncMock()
-        mock_redis.exists.return_value = 1  # already done
+        mock_redis.set = AsyncMock(return_value=None)  # SET NX returns None = already done
 
         with patch("src.core.redis.get_redis", return_value=mock_redis):
             from src.scheduling.jobs import weekly_options_flow_job
             await weekly_options_flow_job()
 
-        mock_redis.exists.assert_called_once()
+        mock_redis.set.assert_called_once()
 
     async def test_per_symbol_errors_are_isolated(self):
         """weekly_options_flow_job continues processing after a per-symbol error."""
         mock_redis = AsyncMock()
-        mock_redis.exists.return_value = 0
+        mock_redis.set = AsyncMock(return_value=True)  # SET NX returns True = lock acquired
 
         mock_universe = AsyncMock()
         mock_universe.get_symbols.return_value = ["AAPL", "MSFT", "GOOG"]
@@ -139,15 +140,15 @@ class TestWeeklyOptionsFlowJob:
 
 class TestWeeklyTrendsJob:
     async def test_idempotent_via_done_key(self):
-        """weekly_trends_job skips when done key exists."""
+        """weekly_trends_job skips when SET NX returns None (already done)."""
         mock_redis = AsyncMock()
-        mock_redis.exists.return_value = 1
+        mock_redis.set = AsyncMock(return_value=None)  # SET NX returns None = already done
 
         with patch("src.core.redis.get_redis", return_value=mock_redis):
             from src.scheduling.jobs import weekly_trends_job
             await weekly_trends_job()
 
-        mock_redis.exists.assert_called_once()
+        mock_redis.set.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

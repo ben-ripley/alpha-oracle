@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Bot } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
@@ -20,6 +21,9 @@ function CostBar({ label, value, budget }: { label: string; value: number; budge
 }
 
 function RecommendationCard({ rec }: { rec: TradeRecommendation }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const actionColor =
     rec.action === 'BUY' ? 'text-gain' :
     rec.action === 'SELL' ? 'text-loss' : 'text-amber';
@@ -34,10 +38,28 @@ function RecommendationCard({ rec }: { rec: TradeRecommendation }) {
     );
 
   const handleApprove = async () => {
-    if (rec.id) await api.agent.approveRecommendation(rec.id);
+    if (!rec.id || isLoading) return;
+    setIsLoading(true);
+    setActionError(null);
+    try {
+      await api.agent.approveRecommendation(rec.id);
+    } catch {
+      setActionError('Failed to approve — please retry');
+    } finally {
+      setIsLoading(false);
+    }
   };
   const handleReject = async () => {
-    if (rec.id) await api.agent.rejectRecommendation(rec.id);
+    if (!rec.id || isLoading) return;
+    setIsLoading(true);
+    setActionError(null);
+    try {
+      await api.agent.rejectRecommendation(rec.id);
+    } catch {
+      setActionError('Failed to reject — please retry');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -63,19 +85,26 @@ function RecommendationCard({ rec }: { rec: TradeRecommendation }) {
         </div>
       )}
       {rec.human_approved === null && (
-        <div className="flex gap-2 pt-1">
-          <button
-            onClick={handleApprove}
-            className="rounded border border-gain/40 bg-gain-dim px-3 py-1 font-mono text-[10px] uppercase text-gain hover:bg-gain/20 transition-colors"
-          >
-            Approve
-          </button>
-          <button
-            onClick={handleReject}
-            className="rounded border border-loss/40 bg-loss-dim px-3 py-1 font-mono text-[10px] uppercase text-loss hover:bg-loss/20 transition-colors"
-          >
-            Reject
-          </button>
+        <div className="space-y-1 pt-1">
+          <div className="flex gap-2">
+            <button
+              onClick={handleApprove}
+              disabled={isLoading}
+              className="rounded border border-gain/40 bg-gain-dim px-3 py-1 font-mono text-[10px] uppercase text-gain hover:bg-gain/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isLoading ? '...' : 'Approve'}
+            </button>
+            <button
+              onClick={handleReject}
+              disabled={isLoading}
+              className="rounded border border-loss/40 bg-loss-dim px-3 py-1 font-mono text-[10px] uppercase text-loss hover:bg-loss/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isLoading ? '...' : 'Reject'}
+            </button>
+          </div>
+          {actionError && (
+            <p className="font-mono text-[9px] text-loss">{actionError}</p>
+          )}
         </div>
       )}
     </div>
@@ -114,9 +143,9 @@ function AnalysisCard({ analysis }: { analysis: AgentAnalysis }) {
 
 export function Agent() {
   const { data: costRaw, error: costError } = useApi(() => api.agent.costSummary());
-  const { data: briefingRaw } = useApi(() => api.agent.latestBriefing());
+  const { data: briefingRaw, loading: briefingLoading, error: briefingError } = useApi(() => api.agent.latestBriefing());
   const { data: recsRaw } = useApi(() => api.agent.listRecommendations(undefined, 10));
-  const { data: analysesRaw } = useApi(() => api.agent.listAnalyses(undefined, 5).catch(() => ({ analyses: [] })));
+  const { data: analysesRaw, loading: analysesLoading, error: analysesError } = useApi(() => api.agent.listAnalyses(undefined, 5));
 
   const agentDisabled = costError?.includes('503');
 
@@ -159,7 +188,11 @@ export function Agent() {
         {/* Daily briefing */}
         <div className="glow-border rounded-xl bg-surface p-5 space-y-3">
           <div className="font-mono text-[10px] uppercase tracking-wider text-muted">Daily Briefing</div>
-          {briefing && briefing.date ? (
+          {briefingLoading ? (
+            <p className="font-mono text-[11px] text-muted">Loading briefing...</p>
+          ) : briefingError ? (
+            <p className="font-mono text-[11px] text-loss">Failed to load briefing</p>
+          ) : briefing && briefing.date ? (
             <>
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-dim">{briefing.date}</span>
@@ -213,14 +246,18 @@ export function Agent() {
         <div className="font-mono text-[10px] uppercase tracking-wider text-muted">
           Recent Filing Analyses
         </div>
-        {analyses.length > 0 ? (
+        {analysesLoading ? (
+          <p className="font-mono text-[11px] text-muted">Loading analyses...</p>
+        ) : analysesError ? (
+          <p className="font-mono text-[11px] text-loss">Failed to load analyses</p>
+        ) : analyses.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {analyses.map((a, i) => (
               <AnalysisCard key={a.id ?? i} analysis={a} />
             ))}
           </div>
         ) : (
-          <p className="font-mono text-[11px] text-muted">No analyses yet — trigger via POST /api/agent/analyze-filing</p>
+          <p className="font-mono text-[11px] text-muted">No analyses yet</p>
         )}
       </div>
     </div>

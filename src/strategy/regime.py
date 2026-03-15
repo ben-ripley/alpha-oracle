@@ -111,7 +111,7 @@ class RegimeDetector:
         # Rule 2a: BEAR — death cross (price confirmation)
         if ma50 > 0 and current_price < ma50 < ma200:
             gap = (ma50 - current_price) / ma50
-            prob = min(1.0, 0.6 + gap * 5)
+            prob = 0.6 + min(gap * 5, 0.4)
             return MarketRegime.BEAR, round(prob, 3)
 
         # Rule 2b: BEAR — extreme VIX alone (lower confidence, no price confirmation)
@@ -122,7 +122,7 @@ class RegimeDetector:
         # Rule 3: BULL — golden cross with low VIX
         if ma50 > 0 and current_price > ma50 > ma200 and current_vix < _VIX_BULL_MAX:
             gap = (current_price - ma50) / ma50
-            prob = min(1.0, 0.6 + gap * 5)
+            prob = 0.6 + min(gap * 5, 0.4)
             return MarketRegime.BULL, round(prob, 3)
 
         # Rule 4: SIDEWAYS — everything else
