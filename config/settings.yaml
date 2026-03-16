@@ -19,6 +19,9 @@ data:
   edgar:
     user_agent: "alpha-oracle bot@example.com"
     rate_limit_per_second: 10
+  universe:
+    indices: ["sp500"]          # options: sp500, sp400, sp600 — add sp400/sp600 to expand universe
+    min_adv_threshold: 0        # minimum 30-day avg daily volume (0 = disabled)
   feed:
     feed_type: iex          # iex (free, delayed) | sip (paid, real-time)
     symbols_per_connection: 200

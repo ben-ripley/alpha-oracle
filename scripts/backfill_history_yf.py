@@ -7,6 +7,9 @@ script provides split/dividend-adjusted closes directly from Alpha Vantage.
 
 Usage:
     python scripts/backfill_history_yf.py --years 5 --symbols sp500
+    python scripts/backfill_history_yf.py --years 5 --symbols sp400
+    python scripts/backfill_history_yf.py --years 5 --symbols sp600
+    python scripts/backfill_history_yf.py --years 5 --symbols sp1500   # sp500+sp400+sp600
     python scripts/backfill_history_yf.py --years 5 --symbols AAPL,MSFT,GOOG
     python scripts/backfill_history_yf.py --resume        # continue interrupted run
     python scripts/backfill_history_yf.py --reset         # clear progress and restart
@@ -70,12 +73,23 @@ def _fmt_duration(seconds: float) -> str:
     return f"{s}s"
 
 
+_INDEX_ALIASES = {
+    "sp500": ["sp500"],
+    "sp400": ["sp400"],
+    "sp600": ["sp600"],
+    "sp1500": ["sp500", "sp400", "sp600"],
+}
+
+
 async def _get_symbols(symbols_arg: str) -> list[str]:
-    if symbols_arg.lower() == "sp500":
+    key = symbols_arg.lower()
+    if key in _INDEX_ALIASES:
         from src.data.universe import SymbolUniverse
         universe = SymbolUniverse()
-        symbols = await universe.get_symbols()
-        print(f"  Universe loaded: {len(symbols)} S&P 500 symbols")
+        indices = _INDEX_ALIASES[key]
+        symbols = await universe.get_symbols(indices=indices)
+        label = "+".join(i.upper() for i in indices)
+        print(f"  Universe loaded: {len(symbols)} {label} symbols")
         return symbols
     symbols = [s.strip().upper() for s in symbols_arg.split(",") if s.strip()]
     print(f"  Symbol list: {len(symbols)} symbols from command line")

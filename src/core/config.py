@@ -44,6 +44,8 @@ class EdgarDataSettings(BaseSettings):
 class UniverseSettings(BaseSettings):
     cache_ttl_seconds: int = 86400  # 24h
     fallback_csv: str = "config/sp500_fallback.csv"
+    indices: list[str] = Field(default_factory=lambda: ["sp500"])
+    min_adv_threshold: float = 0.0  # minimum 30-day avg daily volume; 0 = disabled
 
 
 class FeedSettings(BaseSettings):

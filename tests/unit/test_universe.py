@@ -111,6 +111,7 @@ class TestGetSymbols:
         ):
             mock_settings.cache_ttl_seconds = 86400
             mock_settings.fallback_csv = str(csv_file)
+            mock_settings.indices = ["sp500"]
             symbols = await universe.get_symbols()
 
         assert len(symbols) == 3

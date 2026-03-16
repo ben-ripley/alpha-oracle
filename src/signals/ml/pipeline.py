@@ -60,6 +60,9 @@ class MLPipeline:
         X = features.loc[mask]
         y = target.loc[mask].astype(int)
 
+        # Downcast float64 → float32 to halve memory footprint on large universes
+        X = X.select_dtypes(include="number").astype("float32")
+
         if len(X) < self.config.min_training_samples:
             raise ValueError(
                 f"Insufficient training samples: {len(X)} < {self.config.min_training_samples}"
@@ -124,7 +127,7 @@ class MLPipeline:
                 f"Feature mismatch. Missing: {missing}, Extra: {extra}"
             )
 
-        X = features[self._feature_names]
+        X = features[self._feature_names].astype("float32")
         proba = self._model.predict_proba(X)
         preds = self._model.predict(X)
 

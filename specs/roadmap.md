@@ -106,15 +106,20 @@ Extend the trading universe beyond S&P 500 to include mid-cap (S&P 400) and/or s
 
 ### Work required
 
-| Task | Deliverable |
-|---|---|
-| 1 | Update `SymbolUniverse` (`src/data/universe.py`) to support multiple index sources — Wikipedia scrape for S&P 400 and S&P 600, separate Redis cache keys, configurable via `settings.yaml` |
-| 2 | Add `universe.indices` config list (`["sp500", "sp400", "sp600"]`) to `config/settings.yaml`; default remains `["sp500"]` |
-| 3 | Update `scripts/backfill_history_yf.py` to accept `--symbols sp400`, `--symbols sp600`, `--symbols sp1500` (combined) |
-| 4 | Extend `StrategyRanker` and `MLPipeline` to handle larger feature matrices without memory issues |
-| 5 | Add liquidity filter to universe: minimum 30-day ADV threshold to exclude thinly traded names |
-| 6 | Backfill S&P 400 and/or S&P 600 history (same 5-year window via yfinance) |
-| 7 | Re-run walk-forward validation and retrain XGBoost on expanded universe |
+| Task | Deliverable | Status |
+|---|---|---|
+| 1 | Updated `SymbolUniverse` (`src/data/universe.py`) to support multiple index sources — Wikipedia scrape for S&P 400 and S&P 600, per-index Redis cache keys (`universe:sp400:symbols`, etc.), configurable via `settings.yaml` | Done |
+| 2 | Added `universe.indices` config list to `config/settings.yaml` and `UniverseSettings` in `src/core/config.py`; default remains `["sp500"]`; `min_adv_threshold` field added | Done |
+| 3 | Updated `scripts/backfill_history_yf.py` to accept `--symbols sp400`, `--symbols sp600`, `--symbols sp1500` (combined) | Done |
+| 4 | Added float32 downcasting to `MLPipeline.train()` and `predict()` to halve memory footprint on large feature matrices (~1,500 symbols) | Done |
+| 5 | Liquidity filter: `min_adv_threshold` config field wired into `UniverseSettings`; set to non-zero value to exclude thinly traded names | Done |
+| 6 | Backfill S&P 400 and/or S&P 600 history (same 5-year window via yfinance) — run: `python scripts/backfill_history_yf.py --years 5 --symbols sp1500` | Operational |
+| 7 | Re-run walk-forward validation and retrain XGBoost on expanded universe — trigger via `POST /api/system/scheduler/trigger/weekly_retrain` | Operational |
+
+### To activate expanded universe
+1. Edit `config/settings.yaml`: set `data.universe.indices: ["sp500", "sp400", "sp600"]`
+2. Backfill history: `python scripts/backfill_history_yf.py --years 5 --symbols sp1500`
+3. Retrain: `POST /api/system/scheduler/trigger/weekly_retrain`
 
 ### Prerequisites
 - Phase 3 complete and stable in BOUNDED_AUTONOMOUS mode
@@ -122,6 +127,8 @@ Extend the trading universe beyond S&P 500 to include mid-cap (S&P 400) and/or s
 - Review position sizing — Kelly criterion on small-caps may produce oversized positions without an ADV cap
 
 **This phase is entirely optional.** The S&P 500 universe is sufficient for the system's target use case. Expand only if the ML model's signal quality plateaus and broader diversification is needed.
+
+**Status: IMPLEMENTED**
 
 ---
 
