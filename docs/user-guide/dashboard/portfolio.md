@@ -1,3 +1,9 @@
+---
+title: Portfolio
+nav_order: 1
+parent: Dashboard
+---
+
 # Portfolio Page
 
 The Portfolio page provides a comprehensive view of your account health, open positions, and allocation.

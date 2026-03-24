@@ -1,3 +1,9 @@
+---
+title: IBKR Gateway Setup
+nav_order: 3
+parent: Infrastructure
+---
+
 # IBKR Gateway Setup
 
 The system connects to Interactive Brokers via IB Gateway (or Trader Workstation) for order execution, market data, and portfolio management. See [ADR-010](../../specs/adrs/010-ibkr-broker-switch.md) for the full rationale behind the IBKR switch.

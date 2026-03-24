@@ -1,3 +1,9 @@
+---
+title: API Layer Module
+nav_order: 8
+parent: Modules
+---
+
 # API Layer Module
 
 The `src/api/` module implements the FastAPI REST API and WebSocket endpoint for the alpha-oracle system. Provides routes for portfolio, strategies, risk, trades, and system management, plus real-time WebSocket broadcasting via [Redis](../glossary.md#redis) pub/sub.

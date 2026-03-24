@@ -1,3 +1,9 @@
+---
+title: Full Autonomous Mode
+nav_order: 7
+parent: Concepts
+---
+
 # Full Autonomous Mode
 
 ## The Four Autonomy Modes

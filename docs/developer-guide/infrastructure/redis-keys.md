@@ -1,3 +1,9 @@
+---
+title: Redis Keys Reference
+nav_order: 4
+parent: Infrastructure
+---
+
 # Redis Keys Reference
 
 [Redis](../glossary.md#redis) is used for caching, rate limiting, PDT tracking, job idempotency, and pub/sub event broadcasting. All keys use a namespace prefix for organization.

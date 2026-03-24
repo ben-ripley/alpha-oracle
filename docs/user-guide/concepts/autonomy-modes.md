@@ -1,3 +1,9 @@
+---
+title: Autonomy Modes
+nav_order: 3
+parent: Concepts
+---
+
 # Autonomy Modes
 
 The system operates in one of four autonomy modes, controlling how much independence the trading system has when executing trades. You start in the safest mode and can gradually progress as you gain confidence.

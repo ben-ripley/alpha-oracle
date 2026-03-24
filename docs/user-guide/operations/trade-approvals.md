@@ -1,3 +1,9 @@
+---
+title: Trade Approvals
+nav_order: 2
+parent: Operations
+---
+
 # Trade Approvals
 
 In [MANUAL_APPROVAL mode](../concepts/autonomy-modes.md#manual_approval), the system generates buy/sell signals and creates proposed orders, but every order requires your explicit approval before execution. This gives you full control while delegating research and analysis to the system.

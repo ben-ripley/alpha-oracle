@@ -1,3 +1,9 @@
+---
+title: Quick Start
+nav_order: 1
+parent: User Guide
+---
+
 # Quick Start Guide
 
 Get the AlphaOracle System running in under 5 minutes.

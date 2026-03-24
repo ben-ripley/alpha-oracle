@@ -1,3 +1,9 @@
+---
+title: User Guide
+nav_order: 2
+has_children: true
+---
+
 # User Guide
 
 Welcome to the AlphaOracle System user guide. This guide is designed for investors and users who want to understand how to use the system effectively, monitor their portfolio, and manage risk.

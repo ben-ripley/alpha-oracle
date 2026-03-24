@@ -1,3 +1,9 @@
+---
+title: Data Flows
+nav_order: 2
+parent: Architecture
+---
+
 # Data Flows
 
 This page documents the three main data flows through the **alpha-oracle** system: signal generation, order execution, and risk management.

@@ -1,3 +1,9 @@
+---
+title: Developer Guide
+nav_order: 3
+has_children: true
+---
+
 # Developer Guide
 
 Welcome to the **alpha-oracle** Developer Guide. This documentation is for developers and contributors who want to understand the system architecture, set up a local development environment, extend functionality, or contribute to the project.

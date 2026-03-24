@@ -1,3 +1,9 @@
+---
+title: Running Tests
+nav_order: 2
+parent: Getting Started
+---
+
 # Running Tests
 
 The **alpha-oracle** project uses **pytest** for testing, with 669 unit tests covering all major subsystems. This page documents how to run the test suite, test organization, and key testing patterns.

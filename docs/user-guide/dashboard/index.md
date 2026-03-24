@@ -1,3 +1,10 @@
+---
+title: Dashboard
+nav_order: 3
+parent: User Guide
+has_children: true
+---
+
 # Dashboard Overview
 
 The AlphaOracle System dashboard is a web-based interface for monitoring your portfolio, strategies, risk, and trades in real time.

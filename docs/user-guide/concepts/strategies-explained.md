@@ -1,3 +1,9 @@
+---
+title: Trading Strategies
+nav_order: 4
+parent: Concepts
+---
+
 # Trading Strategies
 
 The system includes three built-in trading strategies, each designed for swing trading (holding positions for days to weeks, not intraday). All strategies comply with the [PDT rule](./pdt-rule.md) by using minimum holding periods of 2+ days.

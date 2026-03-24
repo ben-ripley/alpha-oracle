@@ -1,3 +1,9 @@
+---
+title: "Runbook: LLM Agent Operations"
+nav_order: 3
+parent: Operations
+---
+
 # Runbook: LLM Agent Operations
 
 ## Monitoring Agent Costs

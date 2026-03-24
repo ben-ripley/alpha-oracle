@@ -1,3 +1,9 @@
+---
+title: Strategies
+nav_order: 2
+parent: Dashboard
+---
+
 # Strategies Page
 
 The Strategies page shows strategy performance rankings, real-time ML signals, and model health monitoring.

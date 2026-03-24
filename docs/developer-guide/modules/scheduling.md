@@ -1,3 +1,9 @@
+---
+title: Scheduling Module
+nav_order: 7
+parent: Modules
+---
+
 # Scheduling Module
 
 The `src/scheduling/` module orchestrates automated data refresh and model retraining via APScheduler cron jobs: daily bars (5pm ET weekdays), weekly fundamentals (6am Saturday), biweekly alternative data (7am 1st/15th), and weekly XGBoost retraining (2am Sunday). All jobs are idempotent via [Redis](../glossary.md#redis) tracking keys.

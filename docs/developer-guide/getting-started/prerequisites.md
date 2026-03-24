@@ -1,3 +1,10 @@
+---
+title: Getting Started
+nav_order: 1
+parent: Developer Guide
+has_children: true
+---
+
 # Prerequisites
 
 This page documents the system requirements and tools needed to run **alpha-oracle** in a local development environment.

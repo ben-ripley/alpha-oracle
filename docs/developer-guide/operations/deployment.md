@@ -1,3 +1,9 @@
+---
+title: Deployment
+nav_order: 1
+parent: Operations
+---
+
 # Deployment
 
 The system supports three deployment modes: **development**, **paper trading**, and **live trading**. All modes use the same codebase with configuration-driven behavior.

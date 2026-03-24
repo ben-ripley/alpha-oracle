@@ -1,3 +1,9 @@
+---
+title: Strategy Engine Module
+nav_order: 3
+parent: Modules
+---
+
 # Strategy Engine Module
 
 The `src/strategy/` module orchestrates trading strategy registration, backtesting, walk-forward validation, and composite ranking. All strategies implement the `BaseStrategy` interface and enforce a minimum 2-day hold period for [PDT](../glossary.md#pdt) compliance.

@@ -1,3 +1,9 @@
+---
+title: Data Ingestion Module
+nav_order: 2
+parent: Modules
+---
+
 # Data Ingestion Module
 
 The `src/data/` module orchestrates multi-source data ingestion: real-time market feeds, historical [OHLCV](../glossary.md#ohlcv) bars, fundamental data, SEC filings, and alternative data (insider trades, short interest). All data flows into [TimescaleDB](../glossary.md#timescaledb) for time-series storage and DuckDB/Parquet for analytics.

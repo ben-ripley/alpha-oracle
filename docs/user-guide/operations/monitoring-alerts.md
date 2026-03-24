@@ -1,3 +1,9 @@
+---
+title: Monitoring Alerts
+nav_order: 1
+parent: Operations
+---
+
 # Monitoring & Alerts
 
 The system provides multiple layers of monitoring to keep you informed about trading activity, system health, and risk events. Even in [BOUNDED_AUTONOMOUS](../concepts/autonomy-modes.md#bounded_autonomous) or [FULL_AUTONOMOUS](../concepts/autonomy-modes.md#full_autonomous) mode, you should monitor the system regularly.

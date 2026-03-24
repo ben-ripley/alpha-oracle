@@ -1,3 +1,9 @@
+---
+title: Glossary
+nav_order: 7
+parent: User Guide
+---
+
 # Glossary
 
 Financial and trading terms used throughout the AlphaOracle system.

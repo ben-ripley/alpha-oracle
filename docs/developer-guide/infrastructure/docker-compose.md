@@ -1,3 +1,9 @@
+---
+title: Docker Compose Infrastructure
+nav_order: 1
+parent: Infrastructure
+---
+
 # Docker Compose Infrastructure
 
 The system uses Docker Compose to orchestrate five core services: [TimescaleDB](../glossary.md#timescaledb), [Redis](../glossary.md#redis), the FastAPI backend, Prometheus, and Grafana. All services are defined in `docker-compose.yml` at the project root.

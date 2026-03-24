@@ -1,3 +1,9 @@
+---
+title: Pattern Day Trading (PDT) Rule
+nav_order: 1
+parent: Concepts
+---
+
 # Pattern Day Trading (PDT) Rule
 
 The PDT rule is a FINRA regulation that limits day trading activity for accounts under $25,000. The system enforces this rule automatically to protect your account from regulatory restrictions.

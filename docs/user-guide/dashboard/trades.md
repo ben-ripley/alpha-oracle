@@ -1,3 +1,9 @@
+---
+title: Trades
+nav_order: 4
+parent: Dashboard
+---
+
 # Trades Page
 
 The Trades page shows trade history, pending approvals (in MANUAL_APPROVAL mode), execution quality metrics, and daily trade summary.

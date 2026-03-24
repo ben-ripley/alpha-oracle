@@ -1,3 +1,9 @@
+---
+title: Module Map
+nav_order: 1
+parent: Architecture
+---
+
 # Module Map
 
 This page provides a complete directory tree of the `src/` folder with one-line descriptions for each module and file. Use this as a quick reference for navigating the codebase.

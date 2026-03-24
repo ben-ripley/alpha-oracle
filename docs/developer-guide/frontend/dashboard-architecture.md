@@ -1,3 +1,10 @@
+---
+title: Frontend
+nav_order: 3
+parent: Developer Guide
+has_children: true
+---
+
 # Frontend Dashboard Architecture
 
 The dashboard is a React 18 single-page application styled with TailwindCSS and built with Vite. It provides real-time visibility into portfolio performance, active strategies, risk metrics, and ML model health.

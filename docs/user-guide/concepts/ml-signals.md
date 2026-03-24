@@ -1,3 +1,9 @@
+---
+title: ML Signal Intelligence
+nav_order: 5
+parent: Concepts
+---
+
 # ML Signal Intelligence
 
 The system uses machine learning (specifically XGBoost, a gradient boosting algorithm) to predict stock price movements and generate buy/sell signals. This is more sophisticated than rule-based strategies because it learns patterns from data.

@@ -1,3 +1,9 @@
+---
+title: ML Pipeline Module
+nav_order: 4
+parent: Modules
+---
+
 # ML Pipeline Module
 
 The `src/signals/` module implements a complete machine learning pipeline for stock signal generation: feature engineering (50+ point-in-time features), [XGBoost](../glossary.md#xgboost) training with walk-forward validation, confidence calibration, model monitoring (PSI drift, rolling accuracy), and model registry (register/promote/rollback).

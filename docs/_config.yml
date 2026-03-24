@@ -1,0 +1,13 @@
+title: Alpha Oracle
+description: An AI-driven automated stock trading system that combines traditional technical analysis with machine learning signals.
+remote_theme: just-the-docs/just-the-docs
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-default-layout
+
+readme_index:
+  with_frontmatter: true
+
+footer_content: ""

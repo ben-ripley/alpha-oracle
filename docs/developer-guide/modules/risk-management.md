@@ -1,3 +1,9 @@
+---
+title: Risk Management Module
+nav_order: 6
+parent: Modules
+---
+
 # Risk Management Module
 
 The `src/risk/` module implements multi-layered risk controls: [PDT](../glossary.md#pdt) guard (CRITICAL), pre-trade checks (position/portfolio limits), circuit breakers (VIX, stale data, drawdown), kill switch (emergency stop), and portfolio monitoring. All risk checks are conservative and exhaustively logged for audit.

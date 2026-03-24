@@ -1,3 +1,9 @@
+---
+title: Writing a Custom Data Adapter
+nav_order: 2
+parent: Extending
+---
+
 # Writing a Custom Data Adapter
 
 Data adapters fetch market data from external sources (APIs, databases, files). All adapters implement the [DataSourceInterface](../glossary.md#abc) abstract base class.

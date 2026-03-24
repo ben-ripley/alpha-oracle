@@ -1,3 +1,9 @@
+---
+title: Troubleshooting
+nav_order: 4
+parent: Operations
+---
+
 # Troubleshooting
 
 Common issues and solutions for the alpha-oracle system.

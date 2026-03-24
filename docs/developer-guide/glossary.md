@@ -1,3 +1,9 @@
+---
+title: Developer Glossary
+nav_order: 9
+parent: Developer Guide
+---
+
 # Developer Glossary
 
 Technical infrastructure and financial/ML terms for developers working on the AlphaOracle system.

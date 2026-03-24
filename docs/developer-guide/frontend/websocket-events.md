@@ -1,3 +1,9 @@
+---
+title: WebSocket Events
+nav_order: 1
+parent: Frontend
+---
+
 # WebSocket Events
 
 The system uses WebSocket for real-time updates from backend to frontend. The WebSocket endpoint subscribes to Redis pub/sub channels and forwards events to connected dashboard clients.

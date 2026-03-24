@@ -1,3 +1,9 @@
+---
+title: Local Dev Setup
+nav_order: 1
+parent: Getting Started
+---
+
 # Local Development Setup
 
 This guide walks through cloning the repository, installing dependencies, configuring the environment, and starting the backend and frontend services.

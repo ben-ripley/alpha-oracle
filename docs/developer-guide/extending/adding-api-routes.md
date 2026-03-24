@@ -1,3 +1,9 @@
+---
+title: Adding API Routes
+nav_order: 3
+parent: Extending
+---
+
 # Adding API Routes
 
 The FastAPI backend exposes REST endpoints for the dashboard and external integrations. All routes follow a consistent pattern using FastAPI routers and dependency injection.

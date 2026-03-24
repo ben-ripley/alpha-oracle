@@ -1,3 +1,9 @@
+---
+title: Monitoring Module
+nav_order: 10
+parent: Modules
+---
+
 # Monitoring Module
 
 The `src/monitoring/` module implements observability for the alpha-oracle system via Prometheus metrics (counters, gauges, histograms), AlertManager for Slack/Telegram notifications, and Grafana dashboards. All components emit structured logs via structlog for centralized analysis.

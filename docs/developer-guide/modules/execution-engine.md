@@ -1,3 +1,9 @@
+---
+title: Execution Engine Module
+nav_order: 5
+parent: Modules
+---
+
 # Execution Engine Module
 
 The `src/execution/` module converts trading signals into executed orders: position sizing via Half-Kelly criterion, smart order routing (market/limit/TWAP), broker adapter integration ([IBKR](../glossary.md#ibkr)/PaperStub/Simulated), and execution quality tracking (slippage, latency).

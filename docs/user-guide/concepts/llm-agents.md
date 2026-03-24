@@ -1,3 +1,9 @@
+---
+title: LLM Agents
+nav_order: 6
+parent: Concepts
+---
+
 # LLM Agents
 
 ## Overview

@@ -1,3 +1,9 @@
+---
+title: Core Module
+nav_order: 1
+parent: Modules
+---
+
 # Core Module
 
 The `src/core/` module provides the foundational building blocks for the alpha-oracle system: domain models, interfaces, configuration, database, and [Redis](../glossary.md#redis) client management.

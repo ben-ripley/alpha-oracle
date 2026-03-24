@@ -1,3 +1,9 @@
+---
+title: Data Backfill
+nav_order: 2
+parent: Operations
+---
+
 # Data Backfill
 
 The `backfill_history.py` script performs a one-time backfill of historical OHLCV data for the S&P 500 universe (or custom symbol list) using Alpha Vantage.

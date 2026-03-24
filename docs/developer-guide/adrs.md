@@ -1,3 +1,9 @@
+---
+title: Architecture Decision Records (ADRs)
+nav_order: 8
+parent: Developer Guide
+---
+
 # Architecture Decision Records (ADRs)
 
 Architecture Decision Records document significant technical decisions made during the design and implementation of the alpha-oracle system. Each ADR captures the context, decision, and consequences of a choice that shapes the system's architecture.

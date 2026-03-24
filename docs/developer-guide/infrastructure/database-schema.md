@@ -1,3 +1,9 @@
+---
+title: Database Schema
+nav_order: 2
+parent: Infrastructure
+---
+
 # Database Schema
 
 The system uses [TimescaleDB](../glossary.md#timescaledb) (PostgreSQL 16 with the TimescaleDB extension) as its primary time-series database. All tables are created as [hypertables](../glossary.md#hypertable) partitioned by timestamp for efficient time-range queries.

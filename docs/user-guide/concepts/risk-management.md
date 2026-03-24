@@ -1,3 +1,9 @@
+---
+title: Risk Management
+nav_order: 2
+parent: Concepts
+---
+
 # Risk Management
 
 The system protects your capital through four layers of risk controls. Every order passes through all four layers before execution. The philosophy is simple: **when in doubt, don't trade.**

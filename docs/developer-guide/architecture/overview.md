@@ -1,3 +1,10 @@
+---
+title: Architecture
+nav_order: 2
+parent: Developer Guide
+has_children: true
+---
+
 # Architecture Overview
 
 This page provides a high-level overview of the **alpha-oracle** system architecture, core design patterns, and key interfaces.

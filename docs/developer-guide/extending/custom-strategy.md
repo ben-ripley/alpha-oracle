@@ -1,3 +1,9 @@
+---
+title: Writing a Custom Strategy
+nav_order: 1
+parent: Extending
+---
+
 # Writing a Custom Strategy
 
 Strategies generate buy/sell signals based on market data and indicators. All strategies implement the [BaseStrategy](../glossary.md#abc) abstract base class.

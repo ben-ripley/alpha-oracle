@@ -1,3 +1,10 @@
+---
+title: Configuration
+nav_order: 4
+parent: User Guide
+has_children: true
+---
+
 # Application Settings Reference
 
 System-wide configuration is stored in `config/settings.yaml`. Settings can be overridden using environment variables with the `SA_` prefix and `__` for nesting (e.g., `SA_BROKER__PROVIDER=simulated`).

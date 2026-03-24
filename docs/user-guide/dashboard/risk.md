@@ -1,3 +1,9 @@
+---
+title: Risk
+nav_order: 3
+parent: Dashboard
+---
+
 # Risk Page
 
 The Risk page monitors compliance with the [PDT rule](../../glossary.md#pdt), position/portfolio limits, circuit breakers, and provides the kill switch for emergency stops.

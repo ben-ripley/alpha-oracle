@@ -1,3 +1,9 @@
+---
+title: Agents Module
+nav_order: 9
+parent: Modules
+---
+
 # Agents Module (`src/agents/`)
 
 ## Overview

@@ -1,3 +1,9 @@
+---
+title: Risk Limits
+nav_order: 1
+parent: Configuration
+---
+
 # Risk Limits Reference
 
 Risk limits are configured in `config/risk_limits.yaml`. These settings control the four layers of [risk management](../concepts/risk-management.md) that protect your capital.

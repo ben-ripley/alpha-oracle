@@ -1,3 +1,9 @@
+---
+title: LLM Guardrails
+nav_order: 4
+parent: Architecture
+---
+
 # LLM Guardrails (Layer 4)
 
 ## Overview

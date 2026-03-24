@@ -1,3 +1,9 @@
+---
+title: Kill Switch
+nav_order: 3
+parent: Operations
+---
+
 # Kill Switch
 
 The kill switch is your emergency "stop everything" button. It immediately halts all trading activity and cancels pending orders.

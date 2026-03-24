@@ -1,3 +1,9 @@
+---
+title: Getting Started
+nav_order: 2
+parent: User Guide
+---
+
 # Getting Started
 
 This guide will help you get oriented when you first open the AlphaOracle System dashboard.
