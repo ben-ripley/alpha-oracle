@@ -1,7 +1,7 @@
 """Scheduled job implementations."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import structlog
@@ -66,7 +66,7 @@ async def daily_bars_job() -> None:
         symbols = await universe.get_symbols()
 
         today = _now_et().date()
-        end_dt = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc)
+        end_dt = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=UTC)
 
         redis = await get_redis()
 
@@ -195,7 +195,7 @@ async def biweekly_altdata_job() -> None:
 
         redis = await get_redis()
         last_run_key = "jobs:altdata:last_run"
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         last_run_str = await redis.get(last_run_key)
         start_dt = (
@@ -277,8 +277,8 @@ async def daily_sentiment_job() -> None:
             logger.info("job.daily_sentiment.already_done", date=today)
             return
 
-        from src.data.adapters.news_adapter import NewsAdapter
         from src.agents.sentiment_scorer import FinBERTSentimentPipeline
+        from src.data.adapters.news_adapter import NewsAdapter
         from src.data.storage import TimeSeriesStorage
         from src.data.universe import SymbolUniverse
 
@@ -342,10 +342,10 @@ async def daily_briefing_job() -> None:
             logger.info("job.daily_briefing.already_done", date=today)
             return
 
-        from src.agents.briefing import PortfolioReviewAgent
         from src.agents.base import AgentContext
-        from src.execution.broker_adapters.paper_stub import PaperStubBroker
+        from src.agents.briefing import PortfolioReviewAgent
         from src.core.config import get_settings as _get_settings
+        from src.execution.broker_adapters.paper_stub import PaperStubBroker
 
         broker_provider = _get_settings().broker.provider.lower()
         if broker_provider == "ibkr":
@@ -510,7 +510,7 @@ async def weekly_retrain_job() -> None:
             logger.warning("job.weekly_retrain.no_symbols")
             return
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         two_years_ago = now - timedelta(days=730)
 
         storage = TimeSeriesStorage()

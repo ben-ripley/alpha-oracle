@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -10,7 +10,6 @@ import pytest
 from src.agents.base import AgentContext
 from src.agents.briefing import PortfolioReviewAgent
 from src.agents.cost_tracker import BudgetExceededError
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -252,7 +251,7 @@ class TestBriefingGeneration:
 
             result = await agent.run(_make_context())
 
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now(UTC).date()
         assert result.output.date.date() == today
 
 
@@ -351,7 +350,7 @@ class TestRedisStorage:
 
             await agent.run(_make_context())
 
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
         stored = [c for c in redis.set.call_args_list if f"agent:briefings:{today}" in str(c)]
         assert len(stored) >= 1
 

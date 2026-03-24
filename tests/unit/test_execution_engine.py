@@ -10,14 +10,12 @@ from src.core.models import (
     OrderSide,
     OrderStatus,
     OrderType,
-    PortfolioSnapshot,
     RiskAction,
     RiskCheckResult,
     Signal,
     SignalDirection,
 )
 from src.execution.engine import ExecutionEngine
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

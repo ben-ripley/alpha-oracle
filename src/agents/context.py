@@ -1,7 +1,7 @@
 """Context gathering utilities for agent workflows."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -23,7 +23,7 @@ async def gather_symbol_context(symbol: str) -> dict[str, Any]:
     """
     ctx: dict[str, Any] = {
         "symbol": symbol,
-        "_gathered_at": datetime.now(timezone.utc).isoformat(),
+        "_gathered_at": datetime.now(UTC).isoformat(),
     }
 
     # Technical features from FeatureStore

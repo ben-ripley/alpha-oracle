@@ -1,20 +1,19 @@
 """Shared test fixtures."""
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from src.core.models import (
-    BacktestResult,
     OHLCV,
+    BacktestResult,
     Order,
     OrderSide,
     OrderType,
-    Position,
     PortfolioSnapshot,
+    Position,
     Signal,
     SignalDirection,
 )

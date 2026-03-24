@@ -10,7 +10,6 @@ import pytest
 from src.core.models import OHLCV
 from src.signals.features.technical import TechnicalFeatureCalculator
 
-
 EXPECTED_COLUMNS = [
     "ret_1d", "ret_5d", "ret_10d", "ret_20d",
     "sma_5_20_ratio", "sma_10_50_ratio", "sma_20_200_ratio",

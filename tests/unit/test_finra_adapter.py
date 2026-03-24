@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -49,7 +49,7 @@ class TestParseResponse:
         assert len(results) == 1
         r = results[0]
         assert r.symbol == "AAPL"
-        assert r.settlement_date == datetime(2026, 3, 1, tzinfo=timezone.utc)
+        assert r.settlement_date == datetime(2026, 3, 1, tzinfo=UTC)
         assert r.short_interest == 5000000
         assert r.avg_daily_volume == 2500000
         assert r.days_to_cover == 2.0
@@ -191,7 +191,7 @@ class TestCaching:
         adapter = FinraAdapter(settings=_make_settings())
         cached_data = ShortInterestData(
             symbol="AAPL",
-            settlement_date=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            settlement_date=datetime(2026, 3, 1, tzinfo=UTC),
             short_interest=5000000,
             avg_daily_volume=2500000,
             days_to_cover=2.0,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -24,7 +24,7 @@ async def get_trade_history(
 ):
     """Get trade history with optional filters."""
     engine = await get_execution_engine()
-    end = datetime.now(timezone.utc)
+    end = datetime.now(UTC)
     start = end - timedelta(days=days)
     trades = await engine.tracker.get_trade_history(
         symbol=symbol, start=start, end=end, limit=limit,
@@ -66,8 +66,6 @@ async def approve_or_reject_trade(request: TradeApprovalRequest):
 async def get_execution_quality(days: int = Query(default=30, ge=1, le=365)):
     """Get execution quality metrics (slippage, fill rates)."""
     engine = await get_execution_engine()
-    end = datetime.now(timezone.utc)
-    start = end - timedelta(days=days)
     metrics = await engine.tracker.get_execution_metrics()
     return metrics
 
@@ -76,9 +74,9 @@ async def get_execution_quality(days: int = Query(default=30, ge=1, le=365)):
 async def get_daily_summary():
     """Get today's trading summary."""
     engine = await get_execution_engine()
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     trades = await engine.tracker.get_trade_history(
-        start=today_start, end=datetime.now(timezone.utc),
+        start=today_start, end=datetime.now(UTC),
     )
 
     total_pnl = sum(t.pnl for t in trades)

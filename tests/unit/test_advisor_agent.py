@@ -13,7 +13,6 @@ _BOUNDED_AUTO_CONFIDENCE_THRESHOLD = 0.7
 from src.agents.base import AgentContext
 from src.agents.cost_tracker import BudgetExceededError
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

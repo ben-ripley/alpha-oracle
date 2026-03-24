@@ -1,13 +1,11 @@
 """Tests for the market data feed module."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from src.data.feeds.base import MarketDataFeed
-
 
 # ---------------------------------------------------------------------------
 # 1. ABC contract enforcement

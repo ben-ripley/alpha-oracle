@@ -10,7 +10,6 @@ from src.agents.analyst import ClaudeAnalystAgent
 from src.agents.base import AgentContext
 from src.agents.cost_tracker import BudgetExceededError
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -466,7 +465,6 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_audit_logging_on_success(self, caplog):
-        import logging
         redis = _make_redis()
         agent = ClaudeAnalystAgent(redis_client=redis)
 

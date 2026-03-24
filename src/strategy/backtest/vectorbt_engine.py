@@ -49,7 +49,6 @@ class VectorBTEngine:
         Returns:
             Tuple of (best_params, best_result).
         """
-        import vectorbt as vbt
 
         filtered = self._filter_data(data, start, end)
         if not filtered:

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Query
 
 from src.api.dependencies import get_broker, get_storage
-from src.core.models import Position, PortfolioSnapshot
+from src.core.models import PortfolioSnapshot, Position
 
 router = APIRouter()
 

@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from collections import deque
-from datetime import UTC as _UTC, datetime
+from datetime import UTC as _UTC
+from datetime import datetime
 
 import numpy as np
 import pandas as pd

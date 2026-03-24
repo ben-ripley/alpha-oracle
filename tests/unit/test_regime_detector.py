@@ -1,11 +1,8 @@
 """Tests for RegimeDetector — rule-based market regime detection."""
 from __future__ import annotations
 
-import pytest
-
 from src.core.models import MarketRegime, RegimeAnalysis
-from src.strategy.regime import RegimeDetector, _MA_LONG, _MA_SHORT
-
+from src.strategy.regime import _MA_LONG, RegimeDetector
 
 # ---------------------------------------------------------------------------
 # Helpers

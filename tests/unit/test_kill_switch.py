@@ -9,14 +9,13 @@ The kill switch MUST:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from src.core.models import Order, OrderSide, OrderType
 from src.risk.kill_switch import REDIS_KS_KEY, REDIS_KS_LOG_KEY, KillSwitch
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -190,7 +189,7 @@ class TestDeactivation:
         mock_settings.return_value.risk.kill_switch.cooldown_minutes = 60
 
         # Activated 5 minutes ago (within 60 minute cooldown)
-        activated_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+        activated_at = datetime.now(UTC) - timedelta(minutes=5)
         state = json.dumps({
             "active": True,
             "reason": "Test",
@@ -210,7 +209,7 @@ class TestDeactivation:
         mock_settings.return_value.risk.kill_switch.cooldown_minutes = 60
 
         # Activated 120 minutes ago (after 60 minute cooldown)
-        activated_at = datetime.now(timezone.utc) - timedelta(minutes=120)
+        activated_at = datetime.now(UTC) - timedelta(minutes=120)
         state = json.dumps({
             "active": True,
             "reason": "Test",
@@ -234,7 +233,7 @@ class TestDeactivation:
         mock_settings.return_value.risk.kill_switch.cooldown_minutes = 60
 
         # Set up prior activation (beyond cooldown)
-        activated_at = datetime.now(timezone.utc) - timedelta(minutes=120)
+        activated_at = datetime.now(UTC) - timedelta(minutes=120)
         state = json.dumps({
             "active": True,
             "reason": "Test",

@@ -4,15 +4,12 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 import numpy as np
-import pandas as pd
-import pytest
 
-from src.core.models import OHLCV, FundamentalData, InsiderTransaction, Signal, SignalDirection
-from src.strategy.builtin.swing_momentum import SwingMomentum
-from src.strategy.builtin.mean_reversion import MeanReversion
-from src.strategy.builtin.value_factor import ValueFactor
+from src.core.models import OHLCV, FundamentalData, InsiderTransaction, SignalDirection
 from src.strategy.builtin.insider_following import InsiderFollowing
-
+from src.strategy.builtin.mean_reversion import MeanReversion
+from src.strategy.builtin.swing_momentum import SwingMomentum
+from src.strategy.builtin.value_factor import ValueFactor
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -405,7 +402,6 @@ class TestInsiderFollowing:
     def test_signal_strength_scales_with_shares(self):
         """Larger total purchase amounts should yield higher signal strength."""
         strategy = InsiderFollowing(min_buy_count=2, min_net_shares=5_000)
-        bars = make_flat_bars(days=30)
 
         small_txns = make_purchases("AAPL", count=2, shares_each=3_000, filed_date=datetime(2024, 1, 1))
         large_txns = make_purchases("MSFT", count=2, shares_each=30_000, filed_date=datetime(2024, 1, 1))

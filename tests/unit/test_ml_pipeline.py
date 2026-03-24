@@ -8,7 +8,6 @@ import pytest
 from src.signals.ml.config import MLConfig
 from src.signals.ml.pipeline import MLPipeline
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

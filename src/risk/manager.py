@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 
@@ -202,7 +202,7 @@ class RiskManagerImpl(RiskManager):
             from src.core.redis import get_redis
 
             redis = await get_redis()
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             await redis.set("risk:autonomy:mode_since", now)
             log_entry = json.dumps({
                 "from": old_mode,

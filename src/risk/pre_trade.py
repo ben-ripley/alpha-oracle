@@ -1,6 +1,8 @@
 """Pre-trade risk engine: validates every order before submission."""
 from __future__ import annotations
 
+import structlog
+
 from src.core.config import get_settings
 from src.core.models import (
     AutonomyMode,
@@ -10,9 +12,6 @@ from src.core.models import (
     RiskAction,
     RiskCheckResult,
 )
-
-import structlog
-
 from src.risk.pdt_guard import PDTGuardImpl
 
 logger = structlog.get_logger(__name__)

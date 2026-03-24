@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import functools
-from datetime import datetime, timezone
-from typing import Any, Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -139,7 +140,7 @@ class LLMGuardrailsChecker:
 
         # Record verification timestamp
         redis = await self._get_redis()
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         await redis.set("risk:guardrails:last_verified", timestamp)
         logger.info("agent.guardrails_verified", timestamp=timestamp)
         return True

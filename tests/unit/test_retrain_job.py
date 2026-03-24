@@ -6,14 +6,13 @@ is required.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pandas as pd
 import pytest
 
 from src.scheduling.jobs import weekly_retrain_job
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -32,7 +31,7 @@ def _make_bar(symbol: str, ts: datetime, close: float = 150.0) -> MagicMock:
 
 
 def _make_bars(symbol: str, n: int = 10) -> list:
-    base = datetime(2023, 1, 2, tzinfo=timezone.utc)
+    base = datetime(2023, 1, 2, tzinfo=UTC)
     from datetime import timedelta
     return [
         _make_bar(symbol, base + timedelta(days=i), close=150.0 + i * 0.1)
@@ -43,7 +42,7 @@ def _make_bars(symbol: str, n: int = 10) -> list:
 def _make_feature_df(n_rows: int = 10) -> pd.DataFrame:
     """Return a small DataFrame that looks like FeatureStore output (no close, no symbol)."""
     from datetime import timedelta
-    base = datetime(2023, 1, 2, tzinfo=timezone.utc)
+    base = datetime(2023, 1, 2, tzinfo=UTC)
     index = pd.DatetimeIndex([base + timedelta(days=i) for i in range(n_rows)])
     return pd.DataFrame(
         {"ret_1d": [0.01] * n_rows, "rsi_14": [50.0] * n_rows},
@@ -54,7 +53,7 @@ def _make_feature_df(n_rows: int = 10) -> pd.DataFrame:
 def _make_target_series(n_rows: int = 10, n_nan: int = 5) -> pd.Series:
     """Return a target Series with some NaN at the tail (forward-return horizon)."""
     from datetime import timedelta
-    base = datetime(2023, 1, 2, tzinfo=timezone.utc)
+    base = datetime(2023, 1, 2, tzinfo=UTC)
     index = pd.DatetimeIndex([base + timedelta(days=i) for i in range(n_rows)])
     values = [1] * (n_rows - n_nan) + [float("nan")] * n_nan
     return pd.Series(values, index=index)

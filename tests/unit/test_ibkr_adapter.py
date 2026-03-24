@@ -7,11 +7,10 @@ import pytest
 
 from src.core.models import Order, OrderSide, OrderStatus, OrderType
 from src.execution.broker_adapters.ibkr_adapter import (
-    IBKRBrokerAdapter,
     _IBKR_STATUS_MAP,
     _MAX_RECONNECT_ATTEMPTS,
+    IBKRBrokerAdapter,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

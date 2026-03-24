@@ -3,7 +3,7 @@
 An automated stock trading system for retail investors managing US equities through a personal brokerage account. The system ingests market data, applies rule-based and ML-driven signal generation, backtests and ranks strategies, executes trades, and manages risk with configurable autonomy levels.
 
 #### Project Status
-[![CI](https://github.com/ben-ripley/alpha-oracle/actions/workflows/ci.yml/badge.svg)](https://github.com/ben-ripley/alpha-oracle/actions/workflows/ci.yml) 
+[![CI](https://github.com/ben-ripley/alpha-oracle/actions/workflows/ci.yml/badge.svg)](https://github.com/ben-ripley/alpha-oracle/actions/workflows/ci.yml)
 
 
 #### Technology Stack

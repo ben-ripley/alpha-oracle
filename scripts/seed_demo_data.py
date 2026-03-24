@@ -10,9 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sys
-import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import redis.asyncio as aioredis
 
@@ -40,7 +38,7 @@ async def get_redis() -> aioredis.Redis:
 # Demo data
 # ---------------------------------------------------------------------------
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime.now(UTC)
 
 
 def dt(days_ago: float, hour: int = 10, minute: int = 0) -> str:

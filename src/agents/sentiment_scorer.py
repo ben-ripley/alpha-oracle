@@ -1,7 +1,7 @@
 """FinBERT sentiment pipeline — optional dependency (transformers + torch)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 
@@ -69,7 +69,7 @@ class FinBERTSentimentPipeline:
         batch_size = getattr(getattr(settings, "sentiment", None), "batch_size", 32)
 
         results: list[SentimentScore] = []
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         failed_batches = 0
         total_batches = 0
 

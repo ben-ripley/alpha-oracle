@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 
@@ -67,7 +67,7 @@ class PortfolioReviewAgent(BaseAgent):
         # Cache check (briefings are cached for the day, not 4h)
         from src.agents.prompts.briefing import GENERATE_BRIEFING_TOOL, SYSTEM_PROMPT
 
-        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today_str = datetime.now(UTC).strftime("%Y-%m-%d")
         prompt_hash = CostTracker.compute_prompt_hash(portfolio_text, model, date=today_str)
         cached = await self._cost_tracker.get_cached_response(prompt_hash)
 
@@ -107,7 +107,7 @@ class PortfolioReviewAgent(BaseAgent):
         risk_utilization = (current_drawdown / max_drawdown) if max_drawdown > 0 else 0.0
 
         briefing = DailyBriefing(
-            date=datetime.now(timezone.utc),
+            date=datetime.now(UTC),
             portfolio_summary=tool_input.get("portfolio_summary", ""),
             daily_pnl=daily_pnl,
             risk_utilization=min(risk_utilization, 1.0),

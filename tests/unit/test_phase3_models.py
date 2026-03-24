@@ -13,8 +13,8 @@ from src.core.models import (
     MarketRegime,
     MonteCarloResult,
     NewsArticle,
-    OptionsFlowRecord,
     OptimizationResult,
+    OptionsFlowRecord,
     RecommendationAction,
     RegimeAnalysis,
     SentimentScore,
@@ -22,7 +22,6 @@ from src.core.models import (
     TradeRecommendation,
     TrendsData,
 )
-
 
 # --- Enum tests ---
 

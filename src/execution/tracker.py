@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime
 
 import structlog
 
@@ -178,10 +178,9 @@ class ExecutionTracker:
         else:
             raw_trades = await redis.lrange(TRADE_HISTORY_KEY, 0, -1)
 
-        from datetime import timezone as _tz
 
         def _aware(dt: datetime) -> datetime:
-            return dt if dt.tzinfo else dt.replace(tzinfo=_tz.utc)
+            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
         trades: list[TradeRecord] = []
         for raw in raw_trades:

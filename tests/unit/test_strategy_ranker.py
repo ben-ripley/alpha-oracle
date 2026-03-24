@@ -1,10 +1,7 @@
 """Unit tests for StrategyRanker."""
 from __future__ import annotations
 
-from datetime import datetime
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from src.core.config import RankingWeights, StrategySettings, WalkForwardSettings
 from src.strategy.ranker import StrategyRanker

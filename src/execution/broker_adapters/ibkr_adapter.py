@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from datetime import datetime
 
 import structlog
 
@@ -15,8 +14,8 @@ from src.core.models import (
     OrderSide,
     OrderStatus,
     OrderType,
-    Position,
     PortfolioSnapshot,
+    Position,
 )
 
 logger = structlog.get_logger(__name__)
@@ -128,7 +127,8 @@ class IBKRBrokerAdapter(BrokerAdapter):
         return Stock(symbol, "SMART", "USD")
 
     def _make_ibkr_order(self, order: Order):
-        from ib_async import LimitOrder, MarketOrder, Order as IbOrder, StopOrder  # noqa: PLC0415
+        from ib_async import LimitOrder, MarketOrder, StopOrder  # noqa: PLC0415
+        from ib_async import Order as IbOrder
 
         action = "BUY" if order.side == OrderSide.BUY else "SELL"
         qty = order.quantity

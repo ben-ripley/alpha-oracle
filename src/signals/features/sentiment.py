@@ -1,18 +1,19 @@
 """Sentiment feature calculator for ML signal pipeline."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pandas as pd
 
 from src.core.models import SentimentScore
 
+
 def _as_utc(ts: datetime) -> datetime:
     """Normalize a datetime to UTC; treat naive datetimes as UTC."""
     if ts.tzinfo is None:
-        return ts.replace(tzinfo=timezone.utc)
-    return ts.astimezone(timezone.utc)
+        return ts.replace(tzinfo=UTC)
+    return ts.astimezone(UTC)
 
 
 _SENTIMENT_COLS = [
@@ -57,7 +58,7 @@ class SentimentFeatureCalculator:
 
         for dt in index:
             # PIT: normalize to UTC for comparison; treat naive timestamps as UTC
-            as_of_utc = dt.to_pydatetime().replace(tzinfo=timezone.utc)
+            as_of_utc = dt.to_pydatetime().replace(tzinfo=UTC)
             scores_30d = [
                 s for s in sorted_scores
                 if _as_utc(s.timestamp) <= as_of_utc

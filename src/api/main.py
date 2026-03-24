@@ -7,7 +7,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import portfolio, strategies, risk, trades, system, websocket, agent, analysis
+from src.api.routes import agent, analysis, portfolio, risk, strategies, system, trades, websocket
 from src.core.config import get_settings
 from src.core.redis import close_redis
 

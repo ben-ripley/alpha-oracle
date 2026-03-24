@@ -6,6 +6,7 @@ export function useWebSocket() {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const connectRef = useRef<() => void>(() => {});
 
   const connect = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -33,7 +34,7 @@ export function useWebSocket() {
 
     ws.onclose = () => {
       setConnected(false);
-      reconnectTimer.current = setTimeout(connect, 3000);
+      reconnectTimer.current = setTimeout(() => connectRef.current(), 3000);
     };
 
     ws.onerror = () => ws.close();
@@ -41,6 +42,7 @@ export function useWebSocket() {
   }, []);
 
   useEffect(() => {
+    connectRef.current = connect;
     connect();
     return () => {
       clearTimeout(reconnectTimer.current);

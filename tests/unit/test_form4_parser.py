@@ -1,8 +1,6 @@
 """Tests for the Form 4 XML parser."""
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-import pytest
 
 from src.core.models import InsiderTransaction
 from src.data.parsers.form4_parser import parse_form4
@@ -15,7 +13,7 @@ def _load_fixture(name: str) -> str:
 
 
 def _filed_date() -> datetime:
-    return datetime(2025, 1, 15, tzinfo=timezone.utc)
+    return datetime(2025, 1, 15, tzinfo=UTC)
 
 
 class TestParsePurchase:

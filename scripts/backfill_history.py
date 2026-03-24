@@ -22,7 +22,7 @@ import argparse
 import asyncio
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 # Ensure the project root is on sys.path when run as a script
@@ -137,7 +137,7 @@ async def _run(args: argparse.Namespace) -> None:
     print(f"  Estimated time at {rate_per_min} req/min: {_fmt_duration(eta_seconds)}")
     print()
 
-    end_dt = datetime.now(timezone.utc)
+    end_dt = datetime.now(UTC)
     start_dt = end_dt - timedelta(days=365 * args.years)
 
     av = AlphaVantageAdapter()
@@ -174,7 +174,7 @@ async def _run(args: argparse.Namespace) -> None:
                 fetched += 1
             except KeyboardInterrupt:
                 print(f"\n\n  Interrupted after {fetched} symbols. Progress saved.")
-                print(f"  Run with --resume (or just re-run) to continue.")
+                print("  Run with --resume (or just re-run) to continue.")
                 return
             except Exception as exc:
                 errors += 1

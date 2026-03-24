@@ -6,11 +6,11 @@ compliance without needing a full backtest run.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from math import sin
+from unittest.mock import MagicMock
 
 import pytest
-from unittest.mock import MagicMock
 
 from src.core.models import (
     OHLCV,
@@ -26,7 +26,6 @@ from src.strategy.builtin.value_factor import ValueFactor
 from src.strategy.engine import StrategyEngine
 from src.strategy.ranker import StrategyRanker
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -38,7 +37,7 @@ def _make_ohlcv(symbol: str, days: int = 60, base: float = 150.0) -> list[OHLCV]
     cleanly without flat lines.  60 bars satisfies SwingMomentum's minimum
     (slow_period=50, requires slow_period+10=60).
     """
-    start = datetime(2024, 1, 2, tzinfo=timezone.utc)
+    start = datetime(2024, 1, 2, tzinfo=UTC)
     bars: list[OHLCV] = []
     for i in range(days):
         close = base * (1.0 + 0.03 * sin(i / 8.0))
@@ -59,7 +58,7 @@ def _make_ohlcv(symbol: str, days: int = 60, base: float = 150.0) -> list[OHLCV]
 def _make_fundamentals(symbol: str, pe: float, pb: float, ev: float) -> FundamentalData:
     return FundamentalData(
         symbol=symbol,
-        timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
         pe_ratio=pe,
         pb_ratio=pb,
         ev_ebitda=ev,
@@ -70,8 +69,8 @@ def _make_fundamentals(symbol: str, pe: float, pb: float, ev: float) -> Fundamen
 def _make_backtest_result(name: str, sharpe: float = 1.5) -> BacktestResult:
     return BacktestResult(
         strategy_name=name,
-        start_date=datetime(2022, 1, 1, tzinfo=timezone.utc),
-        end_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        start_date=datetime(2022, 1, 1, tzinfo=UTC),
+        end_date=datetime(2024, 1, 1, tzinfo=UTC),
         initial_capital=20_000.0,
         final_capital=24_000.0,
         total_return_pct=20.0,
@@ -438,7 +437,7 @@ class TestBacktraderPositionSizing:
         """With max_positions=1, only 1 of 2 simultaneous LONG signals should execute."""
         from src.strategy.backtest.backtrader_engine import BacktraderEngine
 
-        base = datetime(2024, 1, 2, tzinfo=timezone.utc)
+        base = datetime(2024, 1, 2, tzinfo=UTC)
         bars = {
             "AAPL": _make_ohlcv("AAPL", days=20, base=100.0),
             "MSFT": _make_ohlcv("MSFT", days=20, base=100.0),

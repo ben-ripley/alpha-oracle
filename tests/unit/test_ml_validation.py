@@ -15,7 +15,6 @@ from src.signals.ml.metrics import (
 from src.signals.ml.pipeline import MLPipeline
 from src.signals.ml.validation import WalkForwardValidator, _apply_params
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

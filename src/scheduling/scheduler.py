@@ -22,13 +22,13 @@ class TradingScheduler:
     def setup(self) -> None:
         """Register all jobs based on config cron expressions."""
         from src.scheduling.jobs import (
-            daily_bars_job,
-            weekly_fundamentals_job,
             biweekly_altdata_job,
-            weekly_retrain_job,
-            daily_sentiment_job,
+            daily_bars_job,
             daily_briefing_job,
+            daily_sentiment_job,
+            weekly_fundamentals_job,
             weekly_options_flow_job,
+            weekly_retrain_job,
             weekly_trends_job,
         )
 

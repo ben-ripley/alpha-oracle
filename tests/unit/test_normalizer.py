@@ -1,9 +1,7 @@
 """Unit tests for data normalizers (pure functions, no mocking needed)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from src.data.normalizer import (
     normalize_av_bars,
@@ -201,7 +199,7 @@ class TestEdgarFiling:
         # Should use current time as fallback
         assert result.filed_date is not None
         # Check it's recent (within last minute)
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         time_diff = abs((now - result.filed_date).total_seconds())
         assert time_diff < 60
 

@@ -2,20 +2,18 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from src.core.models import OHLCV
-from src.data.normalizer import normalize_ibkr_bars
 from src.data.adapters.ibkr_data_adapter import (
     IBKRDataAdapter,
     _duration_str,
-    _to_utc,
 )
 from src.data.feeds.ibkr_feed import IBKRMarketFeed
-
+from src.data.normalizer import normalize_ibkr_bars
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -94,7 +92,7 @@ def feed_ib():
 
 class TestNormalizeIbkrBars:
     def test_datetime_bar_mapped_correctly(self):
-        bar = _bar(datetime(2024, 1, 15, 0, 0, tzinfo=timezone.utc))
+        bar = _bar(datetime(2024, 1, 15, 0, 0, tzinfo=UTC))
         result = normalize_ibkr_bars([bar], "AAPL")
         assert len(result) == 1
         assert result[0].symbol == "AAPL"
@@ -105,30 +103,30 @@ class TestNormalizeIbkrBars:
     def test_yyyymmdd_string_date_parsed(self):
         bar = _bar("20240115")
         result = normalize_ibkr_bars([bar], "MSFT")
-        assert result[0].timestamp == datetime(2024, 1, 15, tzinfo=timezone.utc)
+        assert result[0].timestamp == datetime(2024, 1, 15, tzinfo=UTC)
 
     def test_yyyymmdd_hhmmss_string_date_parsed(self):
         bar = _bar("20240115 09:30:00")
         result = normalize_ibkr_bars([bar], "TSLA")
-        assert result[0].timestamp == datetime(2024, 1, 15, 9, 30, 0, tzinfo=timezone.utc)
+        assert result[0].timestamp == datetime(2024, 1, 15, 9, 30, 0, tzinfo=UTC)
 
     def test_naive_datetime_gets_utc(self):
         bar = _bar(datetime(2024, 3, 1, 10, 0))  # no tzinfo
         result = normalize_ibkr_bars([bar], "GOOG")
-        assert result[0].timestamp.tzinfo == timezone.utc
+        assert result[0].timestamp.tzinfo == UTC
 
     def test_date_object_converted(self):
         from datetime import date
         bar = _bar(date(2024, 6, 1))
         result = normalize_ibkr_bars([bar], "JPM")
-        assert result[0].timestamp == datetime(2024, 6, 1, tzinfo=timezone.utc)
+        assert result[0].timestamp == datetime(2024, 6, 1, tzinfo=UTC)
 
     def test_empty_list_returns_empty(self):
         assert normalize_ibkr_bars([], "AAPL") == []
 
     def test_multiple_bars_all_mapped(self):
         bars = [
-            _bar(datetime(2024, 1, i, tzinfo=timezone.utc), close=float(150 + i))
+            _bar(datetime(2024, 1, i, tzinfo=UTC), close=float(150 + i))
             for i in range(1, 6)
         ]
         result = normalize_ibkr_bars(bars, "NVDA")
@@ -137,7 +135,7 @@ class TestNormalizeIbkrBars:
 
     def test_ohlcv_fields_correct(self):
         bar = _bar(
-            datetime(2024, 1, 1, tzinfo=timezone.utc),
+            datetime(2024, 1, 1, tzinfo=UTC),
             open_=100.0, high=110.0, low=95.0, close=105.0, volume=500_000,
         )
         r = normalize_ibkr_bars([bar], "X")[0]
@@ -154,62 +152,62 @@ class TestNormalizeIbkrBars:
 
 class TestDurationStr:
     def test_short_daily_range(self):
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 30, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 30, tzinfo=UTC)
         result = _duration_str(start, end, "1Day")
         assert result.endswith(" D")
         assert int(result.split()[0]) >= 29
 
     def test_long_daily_range_uses_years(self):
-        start = datetime(2022, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        start = datetime(2022, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 1, tzinfo=UTC)
         result = _duration_str(start, end, "1Day")
         assert result.endswith(" Y")
 
     def test_intraday_short_range_uses_seconds(self):
-        start = datetime(2024, 1, 15, 9, 30, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 15, 16, 0, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 15, 9, 30, tzinfo=UTC)
+        end = datetime(2024, 1, 15, 16, 0, tzinfo=UTC)
         result = _duration_str(start, end, "1Min")
         assert result.endswith(" S") or result.endswith(" D")
 
     def test_intraday_multi_day_uses_days(self):
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 10, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 10, tzinfo=UTC)
         result = _duration_str(start, end, "5Min")
         assert result.endswith(" D") or result.endswith(" S")
 
     def test_single_day_window_returns_one_day(self):
         """start == end (same day) must not produce zero — minimum is 1 D."""
-        same_day = datetime(2024, 6, 15, tzinfo=timezone.utc)
+        same_day = datetime(2024, 6, 15, tzinfo=UTC)
         result = _duration_str(same_day, same_day, "1Day")
         assert result == "1 D"
 
     def test_364_day_window_stays_in_days(self):
         """364-day difference → delta_days = 365 ≤ 365 threshold → returns N D, not Y."""
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 12, 30, tzinfo=timezone.utc)  # 364-day diff; +1 = 365
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 12, 30, tzinfo=UTC)  # 364-day diff; +1 = 365
         result = _duration_str(start, end, "1Day")
         # delta_days = 364 + 1 = 365 ≤ 365 → "365 D"
         assert result == "365 D"
 
     def test_two_year_window_returns_two_years(self):
         """~730 days should round to 2 Y."""
-        start = datetime(2022, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 1, tzinfo=timezone.utc)  # 730 or 731 days
+        start = datetime(2022, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 1, tzinfo=UTC)  # 730 or 731 days
         result = _duration_str(start, end, "1Day")
         assert result == "2 Y"
 
     def test_three_year_window_returns_three_years(self):
         """~1095 days should round to 3 Y."""
-        start = datetime(2021, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        start = datetime(2021, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 1, tzinfo=UTC)
         result = _duration_str(start, end, "1Day")
         assert result == "3 Y"
 
     def test_intraday_within_day_produces_seconds_string(self):
         """Short intraday range (< 1 day) must produce an 'N S' duration."""
-        start = datetime(2024, 3, 5, 14, 0, tzinfo=timezone.utc)
-        end = datetime(2024, 3, 5, 16, 30, tzinfo=timezone.utc)  # 2.5 hours
+        start = datetime(2024, 3, 5, 14, 0, tzinfo=UTC)
+        end = datetime(2024, 3, 5, 16, 30, tzinfo=UTC)  # 2.5 hours
         result = _duration_str(start, end, "1Min")
         # total_seconds ≈ 9000 + 3600 buffer = 12600 < 86400 → "N S"
         assert result.endswith(" S")
@@ -217,8 +215,8 @@ class TestDurationStr:
 
     def test_1hour_timeframe_always_uses_days(self):
         """1Hour bars always use day-based duration regardless of window size."""
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 5, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 5, tzinfo=UTC)
         result = _duration_str(start, end, "1Hour")
         assert result.endswith(" D")
 
@@ -233,36 +231,36 @@ class TestIBKRDataAdapterHistoricalBars:
         adapter, ib_instance, _ = data_ib
         ib_instance.reqHistoricalDataAsync.return_value = []
 
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 31, tzinfo=UTC)
         result = await adapter.get_historical_bars("AAPL", start, end)
         assert result == []
 
     @pytest.mark.asyncio
     async def test_filters_bars_to_requested_range(self, data_ib):
         adapter, ib_instance, _ = data_ib
-        start = datetime(2024, 1, 10, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 20, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 10, tzinfo=UTC)
+        end = datetime(2024, 1, 20, tzinfo=UTC)
 
         # IBKR may return extra bars outside the range
         bars_returned = [
-            _bar(datetime(2024, 1, 5, tzinfo=timezone.utc)),   # before range
-            _bar(datetime(2024, 1, 15, tzinfo=timezone.utc)),  # in range
-            _bar(datetime(2024, 1, 25, tzinfo=timezone.utc)),  # after range
+            _bar(datetime(2024, 1, 5, tzinfo=UTC)),   # before range
+            _bar(datetime(2024, 1, 15, tzinfo=UTC)),  # in range
+            _bar(datetime(2024, 1, 25, tzinfo=UTC)),  # after range
         ]
         ib_instance.reqHistoricalDataAsync.return_value = bars_returned
 
         result = await adapter.get_historical_bars("AAPL", start, end)
         assert len(result) == 1
-        assert result[0].timestamp == datetime(2024, 1, 15, tzinfo=timezone.utc)
+        assert result[0].timestamp == datetime(2024, 1, 15, tzinfo=UTC)
 
     @pytest.mark.asyncio
     async def test_calls_req_with_correct_bar_size(self, data_ib):
         adapter, ib_instance, _ = data_ib
         ib_instance.reqHistoricalDataAsync.return_value = []
 
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 31, tzinfo=UTC)
         await adapter.get_historical_bars("TSLA", start, end, timeframe="1Hour")
 
         call_kwargs = ib_instance.reqHistoricalDataAsync.call_args.kwargs
@@ -273,8 +271,8 @@ class TestIBKRDataAdapterHistoricalBars:
         adapter, ib_instance, _ = data_ib
         ib_instance.reqHistoricalDataAsync.return_value = []
 
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 31, tzinfo=UTC)
         await adapter.get_historical_bars("MSFT", start, end)
 
         call_kwargs = ib_instance.reqHistoricalDataAsync.call_args.kwargs
@@ -286,8 +284,8 @@ class TestIBKRDataAdapterHistoricalBars:
         ib_instance.isConnected.return_value = False
         ib_instance.reqHistoricalDataAsync.return_value = []
 
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 31, tzinfo=UTC)
         await adapter.get_historical_bars("AAPL", start, end)
 
         ib_instance.connectAsync.assert_awaited_once()
@@ -309,8 +307,8 @@ class TestIBKRDataAdapterLatestBar:
     async def test_returns_last_bar(self, data_ib):
         adapter, ib_instance, _ = data_ib
         bars = [
-            _bar(datetime(2024, 1, 14, tzinfo=timezone.utc), close=150.0),
-            _bar(datetime(2024, 1, 15, tzinfo=timezone.utc), close=155.0),
+            _bar(datetime(2024, 1, 14, tzinfo=UTC), close=150.0),
+            _bar(datetime(2024, 1, 15, tzinfo=UTC), close=155.0),
         ]
         ib_instance.reqHistoricalDataAsync.return_value = bars
         result = await adapter.get_latest_bar("AAPL")
@@ -329,7 +327,7 @@ class TestIBKRDataAdapterLatestBar:
     async def test_result_is_ohlcv(self, data_ib):
         adapter, ib_instance, _ = data_ib
         ib_instance.reqHistoricalDataAsync.return_value = [
-            _bar(datetime(2024, 1, 15, tzinfo=timezone.utc))
+            _bar(datetime(2024, 1, 15, tzinfo=UTC))
         ]
         result = await adapter.get_latest_bar("NVDA")
         assert isinstance(result, OHLCV)
@@ -616,8 +614,8 @@ class TestIBKRDataAdapterPacingLimiter:
         adapter, ib_instance, _ = data_ib
         ib_instance.reqHistoricalDataAsync.return_value = []
 
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 31, tzinfo=UTC)
         await adapter.get_historical_bars("AAPL", start, end)
 
         adapter._rate_limiter.acquire.assert_awaited_once()
@@ -636,8 +634,8 @@ class TestIBKRDataAdapterPacingLimiter:
         adapter, ib_instance, _ = data_ib
         ib_instance.reqHistoricalDataAsync.return_value = []
 
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 31, tzinfo=UTC)
         await adapter.get_historical_bars("AAPL", start, end)
         await adapter.get_historical_bars("MSFT", start, end)
 
@@ -659,8 +657,8 @@ class TestIBKRDataAdapterPacingLimiter:
         adapter._rate_limiter.acquire = AsyncMock(side_effect=record_acquire)
         ib_instance.reqHistoricalDataAsync = AsyncMock(side_effect=record_req)
 
-        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        end = datetime(2024, 1, 31, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, tzinfo=UTC)
+        end = datetime(2024, 1, 31, tzinfo=UTC)
         await adapter.get_historical_bars("AAPL", start, end)
 
         assert call_order == ["acquire", "req"]

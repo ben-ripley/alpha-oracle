@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import UTC
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src.api.dependencies import get_risk_manager, get_broker
+from src.api.dependencies import get_broker, get_risk_manager
 from src.core.models import AutonomyMode
 
 router = APIRouter()
@@ -123,9 +125,10 @@ async def get_kill_switch_status():
 @router.get("/autonomy-mode/readiness")
 async def get_autonomy_mode_readiness():
     """Check readiness for each possible autonomy mode transition."""
-    from datetime import datetime, timezone
-    from src.risk.autonomy_validator import AutonomyValidator
+    from datetime import datetime
+
     from src.core.redis import get_redis
+    from src.risk.autonomy_validator import AutonomyValidator
 
     risk_mgr = await get_risk_manager()
     broker = await get_broker()
@@ -147,8 +150,8 @@ async def get_autonomy_mode_readiness():
         if mode_since_str:
             mode_since = datetime.fromisoformat(mode_since_str)
             if mode_since.tzinfo is None:
-                mode_since = mode_since.replace(tzinfo=timezone.utc)
-            days_in_mode = (datetime.now(timezone.utc) - mode_since).days
+                mode_since = mode_since.replace(tzinfo=UTC)
+            days_in_mode = (datetime.now(UTC) - mode_since).days
     except Exception:
         pass
 
@@ -242,11 +245,11 @@ async def get_guardrails_status():
     if last_verified is None:
         return {"verified": False, "last_verified": None, "message": "Guardrails never verified"}
 
-    from datetime import datetime, timezone
+    from datetime import datetime
     verified_at = datetime.fromisoformat(last_verified)
     if verified_at.tzinfo is None:
-        verified_at = verified_at.replace(tzinfo=timezone.utc)
-    age_hours = (datetime.now(timezone.utc) - verified_at).total_seconds() / 3600
+        verified_at = verified_at.replace(tzinfo=UTC)
+    age_hours = (datetime.now(UTC) - verified_at).total_seconds() / 3600
 
     return {
         "verified": age_hours <= 24.0,

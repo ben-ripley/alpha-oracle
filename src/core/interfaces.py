@@ -5,15 +5,15 @@ from datetime import datetime
 from typing import Any
 
 from src.core.models import (
-    BacktestResult,
-    FundamentalData,
-    Filing,
-    InsiderTransaction,
     OHLCV,
+    BacktestResult,
+    Filing,
+    FundamentalData,
+    InsiderTransaction,
     Order,
     OrderStatus,
-    Position,
     PortfolioSnapshot,
+    Position,
     RiskCheckResult,
     Signal,
 )

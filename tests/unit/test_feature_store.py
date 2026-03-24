@@ -1,23 +1,19 @@
 """Tests for the Feature Store with point-in-time joins."""
 from __future__ import annotations
 
-import shutil
-import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from src.core.models import (
+    OHLCV,
     FundamentalData,
     InsiderTransaction,
-    OHLCV,
     ShortInterestData,
 )
 from src.signals.feature_store import FeatureStore
-
 
 # ---------------------------------------------------------------------------
 # Synthetic data generators

@@ -64,10 +64,10 @@ async def get_execution_engine():
 async def get_strategy_engine():
     global _strategy_engine
     if _strategy_engine is None:
-        from src.strategy.engine import StrategyEngine
-        from src.strategy.builtin.swing_momentum import SwingMomentum
         from src.strategy.builtin.mean_reversion import MeanReversion
+        from src.strategy.builtin.swing_momentum import SwingMomentum
         from src.strategy.builtin.value_factor import ValueFactor
+        from src.strategy.engine import StrategyEngine
         _strategy_engine = StrategyEngine()
         _strategy_engine.register_strategy(SwingMomentum())
         _strategy_engine.register_strategy(MeanReversion())

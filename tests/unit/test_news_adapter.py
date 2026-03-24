@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -148,7 +148,7 @@ class TestGetNews:
             symbol="AAPL",
             title="Cached",
             source="Reuters",
-            published_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            published_at=datetime(2026, 1, 1, tzinfo=UTC),
             url="https://example.com",
             summary="cached",
             sentiment=0.3,

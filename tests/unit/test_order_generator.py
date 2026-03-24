@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.core.models import (
-    Order,
     OrderSide,
     OrderType,
     PortfolioSnapshot,
@@ -16,7 +15,6 @@ from src.core.models import (
     SignalDirection,
 )
 from src.execution.order_generator import OrderGenerator
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

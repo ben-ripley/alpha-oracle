@@ -12,13 +12,14 @@ Rules:
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import redis.asyncio as aioredis
 import structlog
 
-from src.core.config import PDTGuard as PDTGuardConfig, get_settings
+from src.core.config import PDTGuard as PDTGuardConfig
+from src.core.config import get_settings
 from src.core.models import (
     Order,
     OrderSide,
@@ -78,7 +79,7 @@ class PDTGuardImpl:
         entry = json.dumps({
             "symbol": symbol,
             "date": trade_date.isoformat(),
-            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "recorded_at": datetime.now(UTC).isoformat(),
             **(metadata or {}),
         })
         await r.zadd(key, {entry: trade_date.toordinal()})

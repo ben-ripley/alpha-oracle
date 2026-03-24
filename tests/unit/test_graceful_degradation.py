@@ -9,11 +9,11 @@ Tests verify that:
 """
 from __future__ import annotations
 
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ---------------------------------------------------------------------------
 # Scheduling job graceful degradation
@@ -110,11 +110,12 @@ class TestWeeklyOptionsFlowJob:
             call_count += 1
             if symbol == "MSFT":
                 raise RuntimeError("Simulated fetch error")
+            from datetime import datetime
+
             from src.core.models import OptionsFlowRecord
-            from datetime import datetime, timezone
             return [OptionsFlowRecord(
                 symbol=symbol,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 put_volume=1000,
                 call_volume=2000,
                 put_call_ratio=0.5,

@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-import pytest
-
 from src.core.config import (
     AgentSettings,
     OptionsFlowSettings,
@@ -14,7 +12,6 @@ from src.core.config import (
     Settings,
     TrendsSettings,
 )
-
 
 # --- AgentSettings ---
 

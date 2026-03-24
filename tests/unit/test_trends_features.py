@@ -1,7 +1,7 @@
 """Tests for the TrendsFeatureCalculator."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
@@ -19,7 +19,7 @@ def _trend(
     return TrendsData(
         symbol=symbol,
         keyword=keyword,
-        timestamp=datetime.now(timezone.utc) - timedelta(days=days_ago),
+        timestamp=datetime.now(UTC) - timedelta(days=days_ago),
         interest_over_time=interest,
     )
 

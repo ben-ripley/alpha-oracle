@@ -338,8 +338,6 @@ def _apply_params(pipeline: MLPipeline, params: dict) -> None:
     if not params:
         return
 
-    original_train = pipeline.train
-
     def patched_train(features: pd.DataFrame, target: pd.Series) -> dict:
         from xgboost import XGBClassifier
 

@@ -33,7 +33,7 @@ export function FeatureImportance() {
                 fontFamily: 'JetBrains Mono',
                 fontSize: 11,
               }}
-              formatter={(v: number) => [v.toFixed(4), 'Importance']}
+              formatter={(v) => [Number(v).toFixed(4), 'Importance']}
             />
             <Bar dataKey="importance" radius={[0, 4, 4, 0]} maxBarSize={16}>
               {features.map((_, i) => (

@@ -1,7 +1,6 @@
 """Execution quality tracking: slippage, latency, and aggregated metrics."""
 from __future__ import annotations
 
-import json
 import statistics
 from datetime import datetime, timedelta
 

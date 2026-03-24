@@ -1,9 +1,10 @@
 """Temporal/calendar feature calculator for ML signal pipeline."""
 from __future__ import annotations
 
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-from datetime import datetime
 
 
 class TemporalFeatureCalculator:

@@ -1,7 +1,7 @@
 """Tests for the SentimentFeatureCalculator."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
@@ -13,7 +13,7 @@ from src.signals.features.sentiment import SentimentFeatureCalculator
 def _score(symbol: str = "AAPL", days_ago: int = 0, sentiment: float = 0.5, source: str = "news") -> SentimentScore:
     return SentimentScore(
         symbol=symbol,
-        timestamp=datetime.now(timezone.utc) - timedelta(days=days_ago),
+        timestamp=datetime.now(UTC) - timedelta(days=days_ago),
         source=source,
         text_snippet="test",
         sentiment=sentiment,

@@ -232,7 +232,7 @@ export function Backtest() {
                       fontFamily: 'JetBrains Mono',
                       fontSize: 11,
                     }}
-                    formatter={(v: number) => [`$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'Equity']}
+                    formatter={(v) => [`$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'Equity']}
                     labelFormatter={(l) => String(l).slice(0, 10)}
                   />
                 </AreaChart>

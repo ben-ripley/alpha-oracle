@@ -10,7 +10,7 @@ The PDT guard MUST:
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -24,7 +24,6 @@ from src.core.models import (
     RiskAction,
 )
 from src.risk.pdt_guard import PDTGuardImpl, _business_days_ago
-
 
 # ---------------------------------------------------------------------------
 # Helpers

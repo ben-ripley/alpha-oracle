@@ -8,10 +8,10 @@ from pathlib import Path
 import pandas as pd
 
 from src.core.models import (
+    OHLCV,
     AnalystEstimate,
     FundamentalData,
     InsiderTransaction,
-    OHLCV,
     OptionsFlowRecord,
     SentimentScore,
     ShortInterestData,

@@ -53,7 +53,7 @@ export function AccuracyChart() {
               fontFamily: 'JetBrains Mono',
               fontSize: 11,
             }}
-            formatter={(v: number) => [`${(v * 100).toFixed(1)}%`, 'Accuracy']}
+            formatter={(v) => [`${(Number(v) * 100).toFixed(1)}%`, 'Accuracy']}
             labelFormatter={(l) => l}
           />
         </LineChart>

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 import backtrader as bt
-import numpy as np
 import pandas as pd
 import structlog
 from dateutil.relativedelta import relativedelta
@@ -247,8 +245,6 @@ class BacktraderEngine(BacktestEngine):
         years = days / 365.25 if days > 0 else 1.0
         annual_return = ((final_capital / initial_capital) ** (1.0 / years) - 1.0) * 100 if years > 0 else 0.0
 
-        # Sortino: use returns analyzer
-        returns_analysis = strat.analyzers.returns.get_analysis()
         # Approximate Sortino from available data
         sortino = self._estimate_sortino(sharpe, total_return, years)
 

@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from src.core.interfaces import BaseStrategy
-from src.core.models import BacktestResult, OHLCV, Signal, SignalDirection
+from src.core.models import OHLCV, BacktestResult, Signal, SignalDirection
 from src.strategy.engine import StrategyEngine
 
 
@@ -171,7 +171,7 @@ class TestBacktest:
         engine._backtest_engine = MagicMock()
         engine._backtest_engine.run = MagicMock(return_value=expected_result)
 
-        result = engine.run_backtest("TestStrat", data)
+        engine.run_backtest("TestStrat", data)
 
         # Verify run was called with inferred dates
         call_args = engine._backtest_engine.run.call_args

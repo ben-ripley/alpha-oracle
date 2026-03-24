@@ -139,8 +139,8 @@ async def optimize_allocation(request: OptimizeRequest):
             detail="strategy_returns must not be empty",
         )
 
-    from src.strategy.optimizer import MultiStrategyOptimizer
     from src.core.models import MarketRegime
+    from src.strategy.optimizer import MultiStrategyOptimizer
 
     regime = None
     if request.regime:

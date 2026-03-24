@@ -3,7 +3,7 @@ import { TrendingUp } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { api } from '../lib/api';
-import type { RegimeAnalysis, OptimizationResult, AutonomyReadiness, GuardrailStatus } from '../lib/types';
+import type { RegimeAnalysis, AutonomyReadiness, GuardrailStatus } from '../lib/types';
 import {
   LineChart,
   Line,
@@ -70,7 +70,7 @@ function MonteCarloChart() {
             contentStyle={{ background: 'var(--color-panel)', border: '1px solid var(--color-border)', borderRadius: 8 }}
             labelStyle={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'var(--color-muted)' }}
             itemStyle={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}
-            formatter={(v: number) => [`$${v.toFixed(0)}`, '']}
+            formatter={(v) => [`$${Number(v).toFixed(0)}`, '']}
           />
           <ReferenceLine y={10000} stroke="var(--color-border)" strokeDasharray="3 3" />
           <Line type="monotone" dataKey="p95" stroke="var(--color-gain)" strokeWidth={1} dot={false} name="p95" />
@@ -91,22 +91,6 @@ function MonteCarloChart() {
           <span key={label} className={`font-mono text-[9px] uppercase ${color}`}>{label}</span>
         ))}
       </div>
-    </div>
-  );
-}
-
-function AllocationBar({ allocation }: { allocation: { strategy_name: string; weight: number; expected_return: number } }) {
-  const pct = (allocation.weight * 100).toFixed(1);
-  return (
-    <div className="flex items-center gap-3">
-      <span className="font-mono text-[10px] text-dim w-32 truncate">{allocation.strategy_name}</span>
-      <div className="flex-1 h-1.5 rounded-full bg-panel">
-        <div className="h-1.5 rounded-full bg-cyan transition-all" style={{ width: `${allocation.weight * 100}%` }} />
-      </div>
-      <span className="font-mono text-[10px] text-muted w-10 text-right">{pct}%</span>
-      <span className={`font-mono text-[10px] w-14 text-right ${allocation.expected_return >= 0 ? 'text-gain' : 'text-loss'}`}>
-        {(allocation.expected_return * 100).toFixed(2)}%
-      </span>
     </div>
   );
 }

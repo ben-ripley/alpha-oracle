@@ -6,10 +6,9 @@ from typing import Any
 import pandas as pd
 import structlog
 
-from src.strategy.builtin._indicators import bbands, rsi
-
 from src.core.interfaces import BaseStrategy
 from src.core.models import OHLCV, Signal, SignalDirection
+from src.strategy.builtin._indicators import bbands, rsi
 
 logger = structlog.get_logger(__name__)
 

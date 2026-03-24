@@ -1,7 +1,7 @@
 """Tests for the OptionsFlowFeatureCalculator."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
@@ -20,7 +20,7 @@ def _record(
     pcr = put_vol / call_vol if call_vol > 0 else 0.0
     return OptionsFlowRecord(
         symbol=symbol,
-        timestamp=datetime.now(timezone.utc) - timedelta(days=days_ago),
+        timestamp=datetime.now(UTC) - timedelta(days=days_ago),
         put_volume=put_vol,
         call_volume=call_vol,
         put_call_ratio=pcr,

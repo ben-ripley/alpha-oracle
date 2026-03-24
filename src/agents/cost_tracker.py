@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -41,11 +41,11 @@ class CostTracker:
         return self._redis
 
     def _daily_key(self) -> str:
-        date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_str = datetime.now(UTC).strftime("%Y-%m-%d")
         return f"agent:cost:daily:{date_str}"
 
     def _monthly_key(self) -> str:
-        month_str = datetime.now(timezone.utc).strftime("%Y-%m")
+        month_str = datetime.now(UTC).strftime("%Y-%m")
         return f"agent:cost:monthly:{month_str}"
 
     async def record_usage(

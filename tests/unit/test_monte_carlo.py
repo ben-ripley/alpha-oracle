@@ -6,7 +6,6 @@ import pytest
 from src.core.models import MonteCarloResult
 from src.strategy.monte_carlo import MonteCarloSimulator
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -1,6 +1,10 @@
 import {
   ShieldAlert, CheckCircle2, XCircle,
 } from 'lucide-react';
+
+const _DD_DATES = Array.from({ length: 60 }, (_, i) =>
+  new Date(Date.now() - (59 - i) * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+);
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useApi } from '../hooks/useApi';
@@ -65,8 +69,8 @@ export function Risk() {
   ];
 
   // Generate a simple drawdown chart from current drawdown
-  const ddHistory = Array.from({ length: 60 }, (_, i) => ({
-    date: new Date(Date.now() - (59 - i) * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  const ddHistory = _DD_DATES.map((date, i) => ({
+    date,
     drawdown: -(Math.abs(Math.sin(i / 8) * Math.min(currentDrawdown, 6) + (i % 3) * 0.3)),
   }));
 

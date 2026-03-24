@@ -9,7 +9,7 @@ Circuit breakers MUST:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -25,7 +25,6 @@ from src.risk.circuit_breaker import (
     StaleDataBreaker,
     VIXBreaker,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -109,7 +108,7 @@ class TestStaleDataBreaker:
     async def test_old_timestamp_trips(self):
         """Old timestamp -> tripped."""
         breaker = StaleDataBreaker(max_age_seconds=300)
-        old_time = datetime.now(timezone.utc) - timedelta(seconds=600)
+        old_time = datetime.now(UTC) - timedelta(seconds=600)
         context = {"last_data_timestamp": old_time}
 
         tripped, reason = await breaker.check(context)
@@ -122,7 +121,7 @@ class TestStaleDataBreaker:
     async def test_recent_timestamp_not_tripped(self):
         """Recent timestamp -> not tripped."""
         breaker = StaleDataBreaker(max_age_seconds=300)
-        recent_time = datetime.now(timezone.utc)
+        recent_time = datetime.now(UTC)
         context = {"last_data_timestamp": recent_time}
 
         tripped, reason = await breaker.check(context)
@@ -267,7 +266,7 @@ class TestDeadManSwitchBreaker:
     async def test_old_heartbeat_trips(self):
         """Old heartbeat (72h ago, max=48h) -> tripped."""
         breaker = DeadManSwitchBreaker(max_hours=48)
-        old_heartbeat = datetime.now(timezone.utc) - timedelta(hours=72)
+        old_heartbeat = datetime.now(UTC) - timedelta(hours=72)
         context = {"last_operator_heartbeat": old_heartbeat}
 
         tripped, reason = await breaker.check(context)
@@ -280,7 +279,7 @@ class TestDeadManSwitchBreaker:
     async def test_recent_heartbeat_not_tripped(self):
         """Recent heartbeat (1h ago) -> not tripped."""
         breaker = DeadManSwitchBreaker(max_hours=48)
-        recent_heartbeat = datetime.now(timezone.utc) - timedelta(hours=1)
+        recent_heartbeat = datetime.now(UTC) - timedelta(hours=1)
         context = {"last_operator_heartbeat": recent_heartbeat}
 
         tripped, reason = await breaker.check(context)
@@ -313,11 +312,11 @@ class TestCircuitBreakerManager:
         # Build context that trips VIX breaker
         context = {
             "vix_level": 40.0,
-            "last_data_timestamp": datetime.now(timezone.utc),
+            "last_data_timestamp": datetime.now(UTC),
             "max_drawdown_pct": 5.0,
             "daily_pnl_pct": -1.0,
             "reconciliation_drift_pct": 0.5,
-            "last_operator_heartbeat": datetime.now(timezone.utc),
+            "last_operator_heartbeat": datetime.now(UTC),
         }
 
         results = await manager.check_all(context)
@@ -348,10 +347,10 @@ class TestCircuitBreakerManager:
         # Context with VIX above threshold
         context = {
             "vix_level": 40.0,
-            "last_data_timestamp": datetime.now(timezone.utc),
+            "last_data_timestamp": datetime.now(UTC),
             "max_drawdown_pct": 5.0,
             "daily_pnl_pct": -1.0,
-            "last_operator_heartbeat": datetime.now(timezone.utc),
+            "last_operator_heartbeat": datetime.now(UTC),
         }
 
         result = await manager.is_any_tripped(context)
@@ -374,11 +373,11 @@ class TestCircuitBreakerManager:
         # Context with all breakers happy
         context = {
             "vix_level": 20.0,
-            "last_data_timestamp": datetime.now(timezone.utc),
+            "last_data_timestamp": datetime.now(UTC),
             "max_drawdown_pct": 5.0,
             "daily_pnl_pct": 1.0,
             "reconciliation_drift_pct": 0.5,
-            "last_operator_heartbeat": datetime.now(timezone.utc),
+            "last_operator_heartbeat": datetime.now(UTC),
         }
 
         result = await manager.is_any_tripped(context)
@@ -402,7 +401,7 @@ class TestCircuitBreakerManager:
                 return json.dumps({
                     "tripped": True,
                     "reason": "VIX at 40.0",
-                    "checked_at": datetime.now(timezone.utc).isoformat(),
+                    "checked_at": datetime.now(UTC).isoformat(),
                 })
             return None
 
@@ -436,8 +435,8 @@ class TestCircuitBreakerManager:
             daily_pnl_pct=-2.0,
         )
         vix_level = 25.0
-        last_data_ts = datetime.now(timezone.utc)
-        last_heartbeat = datetime.now(timezone.utc) - timedelta(hours=10)
+        last_data_ts = datetime.now(UTC)
+        last_heartbeat = datetime.now(UTC) - timedelta(hours=10)
         drift = 0.8
 
         context = manager.build_context(

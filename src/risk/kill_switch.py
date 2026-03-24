@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis.asyncio as aioredis
 import structlog
@@ -38,7 +38,7 @@ class KillSwitch:
     async def activate(self, reason: str) -> None:
         """Activate the kill switch. This halts all trading immediately."""
         r = await self._redis()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         state = json.dumps({
             "active": True,
@@ -64,7 +64,6 @@ class KillSwitch:
         # Cancel all open orders if broker adapter available
         if self._broker is not None:
             try:
-                positions = await self._broker.get_positions()
                 orders = await self._broker.get_open_orders() if hasattr(self._broker, "get_open_orders") else []
                 for order in orders:
                     if order.broker_order_id:
@@ -81,7 +80,7 @@ class KillSwitch:
             state = json.loads(raw)
             if state.get("active"):
                 activated_at = datetime.fromisoformat(state["activated_at"])
-                elapsed_min = (datetime.now(timezone.utc) - activated_at).total_seconds() / 60
+                elapsed_min = (datetime.now(UTC) - activated_at).total_seconds() / 60
                 cooldown = self._config.cooldown_minutes
                 if elapsed_min < cooldown:
                     remaining = cooldown - elapsed_min
@@ -94,7 +93,7 @@ class KillSwitch:
                         f"(cooldown: {cooldown} minutes)."
                     )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         new_state = json.dumps({
             "active": False,
             "deactivated_at": now.isoformat(),

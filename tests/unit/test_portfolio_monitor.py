@@ -13,7 +13,6 @@ from src.core.models import (
 )
 from src.risk.portfolio_monitor import PortfolioMonitor
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

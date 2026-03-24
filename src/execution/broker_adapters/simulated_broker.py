@@ -6,8 +6,7 @@ All state is in-memory and resets on process restart.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import UTC, datetime, timedelta
 
 import structlog
 
@@ -16,9 +15,8 @@ from src.core.models import (
     Order,
     OrderSide,
     OrderStatus,
-    OrderType,
-    Position,
     PortfolioSnapshot,
+    Position,
 )
 
 logger = structlog.get_logger(__name__)
@@ -97,7 +95,7 @@ class SimulatedBroker(BrokerAdapter):
         order.status = OrderStatus.FILLED
         order.filled_price = fill_price
         order.filled_quantity = order.quantity
-        order.filled_at = datetime.now(timezone.utc)
+        order.filled_at = datetime.now(UTC)
         order.broker_order_id = f"sim-{order.id}"
 
         self._orders[order.id] = order
@@ -164,7 +162,7 @@ class SimulatedBroker(BrokerAdapter):
         try:
             from src.data.storage import TimeSeriesStorage
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             start = now - timedelta(days=_PRICE_LOOKBACK_DAYS)
             storage = TimeSeriesStorage()
             bars = await storage.get_ohlcv(order.symbol, start, now)
@@ -197,7 +195,7 @@ class SimulatedBroker(BrokerAdapter):
                     unrealized_pnl_pct=0.0,
                     side=OrderSide.BUY,
                     strategy_name=order.strategy_name,
-                    entry_date=datetime.now(timezone.utc),
+                    entry_date=datetime.now(UTC),
                 )
             else:
                 new_qty = existing.quantity + order.quantity
@@ -244,7 +242,7 @@ class SimulatedBroker(BrokerAdapter):
         try:
             from src.data.storage import TimeSeriesStorage
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             start = now - timedelta(days=_PRICE_LOOKBACK_DAYS)
             storage = TimeSeriesStorage()
 

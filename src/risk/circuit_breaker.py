@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis.asyncio as aioredis
 import structlog
@@ -53,7 +53,7 @@ class StaleDataBreaker(CircuitBreaker):
             return True, "No data timestamp available — assuming stale"
         if isinstance(last_data_ts, str):
             last_data_ts = datetime.fromisoformat(last_data_ts)
-        age = (datetime.now(timezone.utc) - last_data_ts).total_seconds()
+        age = (datetime.now(UTC) - last_data_ts).total_seconds()
         if age > self.max_age_seconds:
             return True, f"Data is {age:.0f}s old (max {self.max_age_seconds}s)"
         return False, f"Data age {age:.0f}s (max {self.max_age_seconds}s)"
@@ -112,7 +112,7 @@ class DeadManSwitchBreaker(CircuitBreaker):
             return True, "No operator heartbeat recorded — tripping dead man's switch"
         if isinstance(last_heartbeat, str):
             last_heartbeat = datetime.fromisoformat(last_heartbeat)
-        hours = (datetime.now(timezone.utc) - last_heartbeat).total_seconds() / 3600
+        hours = (datetime.now(UTC) - last_heartbeat).total_seconds() / 3600
         if hours > self.max_hours:
             return True, f"No operator heartbeat for {hours:.1f}h (max {self.max_hours}h)"
         return False, f"Last heartbeat {hours:.1f}h ago (max {self.max_hours}h)"
@@ -192,7 +192,7 @@ class CircuitBreakerManager:
             state = json.dumps({
                 "tripped": tripped,
                 "reason": reason,
-                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "checked_at": datetime.now(UTC).isoformat(),
             })
             await r.set(f"{REDIS_CB_PREFIX}{breaker.name}", state, ex=600)
 
@@ -225,6 +225,6 @@ class CircuitBreakerManager:
     async def record_heartbeat(self) -> None:
         """Record an operator heartbeat (extends dead man's switch)."""
         r = await self._redis()
-        ts = datetime.now(timezone.utc).isoformat()
+        ts = datetime.now(UTC).isoformat()
         await r.set(f"{REDIS_CB_PREFIX}heartbeat", ts)
         logger.info("operator_heartbeat_recorded", timestamp=ts)

@@ -15,10 +15,13 @@ Usage::
 from __future__ import annotations
 
 import functools
-from typing import Union
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import anthropic
 
 
-def get_anthropic_client() -> "Union[anthropic.Anthropic, anthropic.AnthropicBedrock]":
+def get_anthropic_client() -> anthropic.Anthropic | anthropic.AnthropicBedrock:
     """Return an Anthropic client configured for the active provider.
 
     The client is cached after first construction — call

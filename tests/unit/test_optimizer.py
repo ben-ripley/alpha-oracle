@@ -4,8 +4,7 @@ from __future__ import annotations
 import pytest
 
 from src.core.models import MarketRegime, OptimizationResult, StrategyAllocation
-from src.strategy.optimizer import MultiStrategyOptimizer, _MAX_SINGLE_WEIGHT
-
+from src.strategy.optimizer import _MAX_SINGLE_WEIGHT, MultiStrategyOptimizer
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -17,7 +17,7 @@ class TestAutonomyTransitionRoute:
     @pytest.mark.asyncio
     async def test_transition_rejected_when_validator_rejects(self):
         """Endpoint must raise HTTP 422 when the validator returns (False, reasons)."""
-        from src.api.routes.risk import transition_autonomy_mode, TransitionRequest
+        from src.api.routes.risk import TransitionRequest, transition_autonomy_mode
 
         mock_risk_mgr = MagicMock()
         mock_risk_mgr.settings.autonomy_mode = "MANUAL_APPROVAL"
@@ -50,7 +50,7 @@ class TestAutonomyTransitionRoute:
     @pytest.mark.asyncio
     async def test_transition_approved_when_validator_approves(self):
         """Endpoint must succeed when the validator returns (True, [])."""
-        from src.api.routes.risk import transition_autonomy_mode, TransitionRequest
+        from src.api.routes.risk import TransitionRequest, transition_autonomy_mode
 
         mock_risk_mgr = MagicMock()
         mock_risk_mgr.settings.autonomy_mode = "MANUAL_APPROVAL"

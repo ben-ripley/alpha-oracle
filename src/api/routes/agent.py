@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC
 
+import structlog
 from fastapi import APIRouter, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 
-import structlog
-
-from src.api.dependencies import get_analyst_agent, get_advisor_agent, get_briefing_agent
+from src.api.dependencies import get_advisor_agent, get_analyst_agent
 
 logger = structlog.get_logger(__name__)
 
@@ -286,12 +286,13 @@ async def get_latest_briefing():
     """Get the most recent daily portfolio briefing."""
     _check_agent_enabled()
 
+    from datetime import datetime, timedelta
+
     from src.core.models import DailyBriefing
     from src.core.redis import get_redis
-    from datetime import datetime, timedelta, timezone
 
     redis = await get_redis()
-    utc_today = datetime.now(timezone.utc).date()
+    utc_today = datetime.now(UTC).date()
 
     # Try today first, then previous days (up to 7)
     for days_ago in range(7):
@@ -313,13 +314,14 @@ async def get_briefing_history(limit: int = Query(7, ge=1, le=90)):
     """List recent daily briefings (up to limit days)."""
     _check_agent_enabled()
 
+    from datetime import datetime, timedelta
+
     from src.core.models import DailyBriefing
     from src.core.redis import get_redis
-    from datetime import datetime, timedelta, timezone
 
     redis = await get_redis()
     briefings = []
-    utc_today = datetime.now(timezone.utc).date()
+    utc_today = datetime.now(UTC).date()
 
     for days_ago in range(limit):
         check_date = (utc_today - timedelta(days=days_ago)).isoformat()

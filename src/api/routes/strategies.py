@@ -5,16 +5,15 @@ import json
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-import structlog
 import redis as redis_sync
+import structlog
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from src.api.dependencies import get_strategy_engine, get_storage
+from src.api.dependencies import get_storage, get_strategy_engine
 from src.core.config import get_settings
-from src.core.models import BacktestResult, StrategyRanking
 from src.core.redis import get_redis
 from src.strategy.backtest.backtrader_engine import BacktraderEngine
 
@@ -50,7 +49,7 @@ def _run_backtest_thread(
         job_data.update({
             "status": "complete",
             "result": result.model_dump(mode="json"),
-            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "completed_at": datetime.now(UTC).isoformat(),
         })
         client.set(job_key, json.dumps(job_data), ex=3600)
 
@@ -75,7 +74,7 @@ def _run_backtest_thread(
         job_data.update({
             "status": "failed",
             "error": str(exc),
-            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "completed_at": datetime.now(UTC).isoformat(),
         })
         client.set(job_key, json.dumps(job_data), ex=3600)
     finally:
@@ -143,11 +142,11 @@ async def run_backtest(request: BacktestRequest):
                    f"Available: {engine.list_strategies()}",
         )
 
-    start = datetime.fromisoformat(request.start_date).replace(tzinfo=timezone.utc)
+    start = datetime.fromisoformat(request.start_date).replace(tzinfo=UTC)
     end = (
-        datetime.fromisoformat(request.end_date).replace(tzinfo=timezone.utc)
+        datetime.fromisoformat(request.end_date).replace(tzinfo=UTC)
         if request.end_date
-        else datetime.now(timezone.utc)
+        else datetime.now(UTC)
     )
 
     storage = await get_storage()
@@ -179,7 +178,7 @@ async def run_backtest(request: BacktestRequest):
         "strategy_name": request.strategy_name,
         "symbol_count": len(request.symbols),
         "estimated_seconds": estimated_seconds,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
     }
     await redis.set(job_key, json.dumps(job_data), ex=3600)
 
@@ -212,6 +211,7 @@ async def get_backtest_results(
 ):
     """Get stored backtest results. Falls back to Redis-cached seed data."""
     import json as _json
+
     from src.core.redis import get_redis
     engine = await get_strategy_engine()
 
@@ -332,6 +332,7 @@ async def get_ml_monitoring():
 async def get_strategy_performance(strategy_name: str):
     """Get backtest performance for a strategy."""
     import json as _json
+
     from src.core.redis import get_redis
     engine = await get_strategy_engine()
     try:

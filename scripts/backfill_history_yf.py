@@ -30,7 +30,7 @@ import argparse
 import asyncio
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -99,6 +99,7 @@ async def _get_symbols(symbols_arg: str) -> list[str]:
 def _fetch_yf_bars(symbol: str, start_dt: datetime, end_dt: datetime):
     """Fetch OHLCV bars from Yahoo Finance. Returns list of OHLCV or empty list."""
     import yfinance as yf
+
     from src.core.models import OHLCV
 
     ticker = yf.Ticker(symbol)
@@ -116,9 +117,9 @@ def _fetch_yf_bars(symbol: str, start_dt: datetime, end_dt: datetime):
     for ts, row in hist.iterrows():
         # yfinance returns timezone-aware timestamps; normalise to UTC
         if hasattr(ts, "tzinfo") and ts.tzinfo is not None:
-            bar_ts = ts.to_pydatetime().astimezone(timezone.utc).replace(tzinfo=timezone.utc)
+            bar_ts = ts.to_pydatetime().astimezone(UTC).replace(tzinfo=UTC)
         else:
-            bar_ts = ts.to_pydatetime().replace(tzinfo=timezone.utc)
+            bar_ts = ts.to_pydatetime().replace(tzinfo=UTC)
 
         close = float(row["Close"])
         bars.append(
@@ -175,7 +176,7 @@ async def _run(args: argparse.Namespace) -> None:
     print(f"  Estimated time: {_fmt_duration(eta_seconds)} (no rate limit)")
     print()
 
-    end_dt = datetime.now(timezone.utc)
+    end_dt = datetime.now(UTC)
     start_dt = end_dt - timedelta(days=365 * args.years)
 
     storage = TimeSeriesStorage()
@@ -214,7 +215,7 @@ async def _run(args: argparse.Namespace) -> None:
                 await asyncio.sleep(_REQUEST_DELAY_SECONDS)
             except KeyboardInterrupt:
                 print(f"\n\n  Interrupted after {fetched} symbols. Progress saved.")
-                print(f"  Re-run to continue.")
+                print("  Re-run to continue.")
                 return
             except Exception as exc:
                 errors += 1

@@ -5,6 +5,8 @@ All transitions are conservative: reject when in doubt.
 """
 from __future__ import annotations
 
+from datetime import UTC
+
 import structlog
 
 from src.core.config import get_settings
@@ -185,7 +187,7 @@ class AutonomyValidator:
         Lazy import to avoid Redis dependency at module import time.
         """
         try:
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             from src.core.redis import get_redis
 
@@ -197,8 +199,8 @@ class AutonomyValidator:
 
             verified_at = datetime.fromisoformat(ts_str)
             if verified_at.tzinfo is None:
-                verified_at = verified_at.replace(tzinfo=timezone.utc)
-            age_hours = (datetime.now(timezone.utc) - verified_at).total_seconds() / 3600
+                verified_at = verified_at.replace(tzinfo=UTC)
+            age_hours = (datetime.now(UTC) - verified_at).total_seconds() / 3600
             return age_hours <= 24.0
 
         except Exception as exc:

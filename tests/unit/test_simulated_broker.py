@@ -1,7 +1,7 @@
 """Tests for SimulatedBroker — in-memory BrokerAdapter."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,14 +12,12 @@ from src.core.models import (
     OrderSide,
     OrderStatus,
     OrderType,
-    Position,
 )
 from src.execution.broker_adapters.simulated_broker import (
-    SimulatedBroker,
     _BUY_SLIPPAGE,
     _SELL_SLIPPAGE,
+    SimulatedBroker,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -28,7 +26,7 @@ from src.execution.broker_adapters.simulated_broker import (
 def _make_ohlcv(symbol: str = "AAPL", close: float = 150.0) -> OHLCV:
     return OHLCV(
         symbol=symbol,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         open=close * 0.99,
         high=close * 1.01,
         low=close * 0.98,
@@ -167,7 +165,6 @@ class TestSellOrder:
     @pytest.mark.asyncio
     async def test_oversell_rejected(self):
         broker = SimulatedBroker(initial_cash=10_000.0)
-        cash_before = broker._cash
         with _mock_storage(150.0):
             await broker.submit_order(_buy_order(qty=5.0))
             cash_after_buy = broker._cash
@@ -257,7 +254,7 @@ class TestGetPortfolio:
         # Two buys in different sectors
         with _mock_storage(close, "AAPL"):
             order_aapl = _buy_order("AAPL", qty=10.0)
-            filled = await broker.submit_order(order_aapl)
+            await broker.submit_order(order_aapl)
             broker._positions["AAPL"].sector = "Technology"
 
         with _mock_storage(close, "JPM"):

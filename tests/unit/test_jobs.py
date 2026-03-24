@@ -1,7 +1,7 @@
 """Unit tests for scheduling job helpers and job implementations."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from zoneinfo import ZoneInfo
 
@@ -502,7 +502,7 @@ class TestBiweeklyAltdataJob:
 
         first_call_args = me.get_insider_transactions.await_args_list[0].args
         start_dt = first_call_args[1]
-        now_approx = datetime.now(timezone.utc)
+        now_approx = datetime.now(UTC)
         # start_dt should be ~14 days ago (within a minute of test execution)
         delta = now_approx - start_dt
         assert 13 <= delta.days <= 15

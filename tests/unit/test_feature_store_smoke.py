@@ -13,27 +13,24 @@ Column budget (with bars only, no optional data sources):
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from math import sin
 
 import numpy as np
 import pandas as pd
-import pytest
 
-from src.core.models import FundamentalData, InsiderTransaction, OHLCV, ShortInterestData
+from src.core.models import OHLCV, FundamentalData
 from src.signals.feature_store import FeatureStore
-from src.signals.features.alternative import AlternativeFeatureCalculator
 from src.signals.features.cross_asset import CrossAssetFeatureCalculator
 from src.signals.features.fundamental import FundamentalFeatureCalculator
 from src.signals.features.technical import TechnicalFeatureCalculator
 from src.signals.features.temporal import TemporalFeatureCalculator
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
-_START = datetime(2023, 1, 3, tzinfo=timezone.utc)  # Tuesday (market day)
+_START = datetime(2023, 1, 3, tzinfo=UTC)  # Tuesday (market day)
 _SYMBOL = "AAPL"
 _BASE_PRICE = 150.0
 

@@ -14,8 +14,8 @@ from src.core.models import (
     Order,
     OrderSide,
     OrderStatus,
-    Position,
     PortfolioSnapshot,
+    Position,
 )
 
 logger = structlog.get_logger(__name__)

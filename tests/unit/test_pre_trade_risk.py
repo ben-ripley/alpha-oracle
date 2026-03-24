@@ -1,8 +1,7 @@
 """Tests for the pre-trade risk engine."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -10,13 +9,12 @@ from src.core.models import (
     Order,
     OrderSide,
     OrderType,
-    Position,
     PortfolioSnapshot,
+    Position,
     RiskAction,
     RiskCheckResult,
 )
 from src.risk.pre_trade import PreTradeRiskEngine
-
 
 # ---------------------------------------------------------------------------
 # Helpers

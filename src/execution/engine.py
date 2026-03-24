@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import uuid
 
 import structlog
 
@@ -195,7 +194,6 @@ class ExecutionEngine:
     async def cancel_all_orders(self) -> int:
         """Cancel all open orders. Returns count of cancelled orders."""
         log = logger.bind()
-        portfolio = await self._broker.get_portfolio()
         # Cancel pending approvals
         redis = await get_redis()
         pending = await redis.hgetall(PENDING_ORDERS_KEY)

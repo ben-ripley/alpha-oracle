@@ -1,14 +1,11 @@
 """Tests for CostTracker: cost calculation, budget enforcement, response caching."""
 from __future__ import annotations
 
-import hashlib
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from src.agents.cost_tracker import BudgetExceededError, CostTracker, _model_cost
-
 
 # ---------------------------------------------------------------------------
 # Helpers

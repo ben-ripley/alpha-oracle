@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -61,8 +61,8 @@ class TestRunBacktestThread:
                 strategy=MagicMock(min_hold_days=2),
                 bars={"AAPL": [], "MSFT": []},
                 initial_capital=20000.0,
-                start=datetime(2024, 1, 1, tzinfo=timezone.utc),
-                end=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                start=datetime(2024, 1, 1, tzinfo=UTC),
+                end=datetime(2026, 1, 1, tzinfo=UTC),
                 redis_url="redis://localhost:6379/0",
             )
 
@@ -92,8 +92,8 @@ class TestRunBacktestThread:
                 strategy=MagicMock(),
                 bars={"AAPL": []},
                 initial_capital=20000.0,
-                start=datetime(2024, 1, 1, tzinfo=timezone.utc),
-                end=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                start=datetime(2024, 1, 1, tzinfo=UTC),
+                end=datetime(2026, 1, 1, tzinfo=UTC),
                 redis_url="redis://localhost:6379/0",
             )
 
@@ -123,8 +123,8 @@ class TestRunBacktestThread:
                 strategy=MagicMock(),
                 bars={"AAPL": [], "MSFT": []},
                 initial_capital=20000.0,
-                start=datetime(2024, 1, 1, tzinfo=timezone.utc),
-                end=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                start=datetime(2024, 1, 1, tzinfo=UTC),
+                end=datetime(2026, 1, 1, tzinfo=UTC),
                 redis_url="redis://localhost:6379/0",
             )
 
@@ -151,8 +151,8 @@ class TestRunBacktestThread:
                 strategy=MagicMock(),
                 bars={"AAPL": []},
                 initial_capital=20000.0,
-                start=datetime(2024, 1, 1, tzinfo=timezone.utc),
-                end=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                start=datetime(2024, 1, 1, tzinfo=UTC),
+                end=datetime(2026, 1, 1, tzinfo=UTC),
                 redis_url="redis://localhost:6379/0",
             )
 
@@ -170,7 +170,7 @@ class TestRunBacktestEndpoint:
     @pytest.mark.asyncio
     async def test_returns_job_id_and_estimated_seconds(self):
         """Successful submit returns job_id, status=running, estimated_seconds."""
-        from src.api.routes.strategies import run_backtest, BacktestRequest
+        from src.api.routes.strategies import BacktestRequest, run_backtest
         from src.core.models import OHLCV
 
         mock_strategy_engine = MagicMock()
@@ -208,8 +208,9 @@ class TestRunBacktestEndpoint:
     @pytest.mark.asyncio
     async def test_returns_404_for_unknown_strategy(self):
         """Unknown strategy_name raises HTTPException 404."""
-        from src.api.routes.strategies import run_backtest, BacktestRequest
         from fastapi import HTTPException
+
+        from src.api.routes.strategies import BacktestRequest, run_backtest
 
         mock_engine = MagicMock()
         mock_engine.get_strategy.side_effect = KeyError("unknown")
@@ -226,8 +227,9 @@ class TestRunBacktestEndpoint:
     @pytest.mark.asyncio
     async def test_returns_422_when_no_ohlcv_data(self):
         """Empty OHLCV results for all symbols raises HTTPException 422."""
-        from src.api.routes.strategies import run_backtest, BacktestRequest
         from fastapi import HTTPException
+
+        from src.api.routes.strategies import BacktestRequest, run_backtest
 
         mock_engine = MagicMock()
         mock_engine.get_strategy.return_value = MagicMock()
@@ -248,7 +250,7 @@ class TestRunBacktestEndpoint:
     @pytest.mark.asyncio
     async def test_uses_fallback_timing_when_no_redis_key(self):
         """estimated_seconds falls back to 50ms/symbol when Redis has no timing data."""
-        from src.api.routes.strategies import run_backtest, BacktestRequest
+        from src.api.routes.strategies import BacktestRequest, run_backtest
         from src.core.models import OHLCV
 
         mock_engine = MagicMock()
@@ -304,8 +306,9 @@ class TestGetBacktestJob:
     @pytest.mark.asyncio
     async def test_raises_404_when_job_not_found(self):
         """Missing Redis key raises HTTPException 404."""
-        from src.api.routes.strategies import get_backtest_job
         from fastapi import HTTPException
+
+        from src.api.routes.strategies import get_backtest_job
 
         mock_redis = AsyncMock()
         mock_redis.get = AsyncMock(return_value=None)

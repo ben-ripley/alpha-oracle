@@ -14,7 +14,6 @@ from src.signals.ml.config import MLConfig
 from src.signals.ml.pipeline import MLPipeline
 from src.signals.ml_strategy import MLSignalStrategy
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
